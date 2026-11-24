@@ -73,3 +73,33 @@ def test_citations_and_abstention(local):
     missing = client.post(url, json={"question": "Qual o prazo de saque?"}).json()
     assert missing["mode"] == "evidencia_insuficiente"
     assert not missing["sources"]
+
+
+def test_unavailable_generation_reports_failure(local, monkeypatch):
+    client, _ = local
+    monkeypatch.setenv("SENTINEL_LOCAL_AI", "1")
+
+    def unavailable(*args, **kwargs):
+        raise ConnectionRefusedError
+
+    monkeypatch.setattr("sentinel.evidence.HTTPConnection", unavailable)
+    response = client.post("/api/orders/demo-order-1/explanation", json={"question":"evento pago"})
+    assert response.status_code == 503
+
+
+@pytest.mark.parametrize("decision", ["confirmado", "descartado"])
+def test_rule_replay_requires_approval(local, decision):
+    client, _ = local
+    before = client.get("/api/experiment").json()
+    assert before["baseline"]["counts"]["fn"] == 1
+    assert before["replay"] is None
+    body = dict(revision=before["revision"], reviewer="Teste", note="Cenários fixos.", decision=decision)
+    result = client.post("/api/experiment/review", json=body)
+    assert result.status_code == 200
+    replay = result.json()["replay"]
+    if decision == "confirmado":
+        assert replay == {"counts": {"tp": 10, "tn": 4, "fp": 0, "fn": 0}, "missed_commission_minor": 0}
+    else:
+        assert replay is None
+    assert client.get("/api/experiment").json() == result.json()
+    assert client.post("/api/experiment/review", json=dict(body, note="revisado")).status_code == 409

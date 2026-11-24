@@ -211,6 +211,96 @@ function Order({ id }: { id: string }) {
     </>
   );
 }
+type ExperimentResult = {
+  counts: Record<string, number>;
+  missed_commission_minor: number;
+};
+type Experiment = {
+  revision: string;
+  finding: string;
+  proposed_check: string;
+  baseline: ExperimentResult;
+  replay: ExperimentResult | null;
+  review: null | { decision: string };
+  evidence: Event[];
+};
+function RuleExperiment() {
+  const [result, setResult] = useState<Experiment>(),
+    [error, setError] = useState(""),
+    [busy, setBusy] = useState(false);
+  useEffect(() => {
+    api<Experiment>("/api/experiment")
+      .then(setResult)
+      .catch((e) => setError(e.message));
+  }, []);
+  async function decide(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (!result) return;
+    setBusy(true);
+    try {
+      setResult(
+        await api<Experiment>("/api/experiment/review", {
+          ...Object.fromEntries(new FormData(e.currentTarget)),
+          revision: result.revision,
+        }),
+      );
+      setError("");
+    } catch (e) {
+      setError(String(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <details>
+      <summary>Experimento de regra · confirmação de venda</summary>
+      {error && <p role="alert">{error}</p>}
+      {result && (
+        <>
+          <p>
+            {result.finding} Evidência: {result.evidence[0].event_id}.
+          </p>
+          <p>{result.proposed_check}</p>
+          <p>
+            Antes da revisão: {result.baseline.counts.fn} caso esperado sem
+            alerta · comissão simulada{" "}
+            {money(result.baseline.missed_commission_minor)}.
+          </p>
+          {result.review ? (
+            <p>Decisão registrada · {result.review.decision}</p>
+          ) : (
+            <form onSubmit={decide}>
+              <label>
+                Revisor da regra
+                <input required name="reviewer" maxLength={80} />
+              </label>
+              <label>
+                Parecer
+                <select name="decision">
+                  <option value="confirmado">Aprovar para o laboratório</option>
+                  <option value="descartado">Rejeitar proposta</option>
+                </select>
+              </label>
+              <label>
+                Motivo do parecer
+                <input required name="note" maxLength={500} />
+              </label>
+              <button disabled={busy}>Registrar parecer</button>
+            </form>
+          )}
+          {result.replay && (
+            <p>
+              Após a repetição: {result.replay.counts.fn} falso(s) negativo(s),{" "}
+              {result.replay.counts.fp} falso(s) positivo(s),{" "}
+              {money(result.replay.missed_commission_minor)} de comissão
+              simulada sem alerta.
+            </p>
+          )}
+        </>
+      )}
+    </details>
+  );
+}
 function App() {
   const [ids, setIds] = useState<string[]>([]),
     [id, select] = useState(""),
@@ -265,6 +355,7 @@ function App() {
             </ul>
           </details>
         )}
+        <RuleExperiment />
         <footer>
           <a href="/docs">Documentação da API</a>
         </footer>

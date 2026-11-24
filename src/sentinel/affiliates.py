@@ -14,6 +14,7 @@ class Journey:
     posted_minor: int = 1000
     linked_creator_accounts: int = 1
     clicks: int = 12
+    sale_confirmed: bool = True
 
 
 BASE = Journey()

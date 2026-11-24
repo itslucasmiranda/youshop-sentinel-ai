@@ -10,6 +10,7 @@ from pydantic import BaseModel, Field, StringConstraints
 
 from .data import SCHEMA
 from .evidence import explain
+from .experiment import PROPOSAL, experiment
 from .trustgraph import evaluate, reconcile, scenarios
 
 router = APIRouter(prefix="/api")
@@ -30,6 +31,9 @@ def database():
     db.row_factory = sqlite3.Row
     db.execute(SCHEMA)
     db.execute(REVIEWS)
+    db.execute("""CREATE TABLE IF NOT EXISTS experiment_reviews (
+        proposal TEXT NOT NULL, revision TEXT NOT NULL, decision TEXT NOT NULL, reviewer TEXT NOT NULL,
+        note TEXT NOT NULL, recorded_at TEXT DEFAULT CURRENT_TIMESTAMP, PRIMARY KEY(proposal,revision))""")
     return db
 
 
@@ -100,3 +104,29 @@ def explanation(order_id: str, body: Question):
 @router.get("/validation")
 def validation():
     return evaluate()
+
+
+@router.get("/experiment")
+def read_experiment():
+    with closing(database()) as db:
+        row = db.execute("SELECT * FROM experiment_reviews WHERE proposal=? AND revision=?",
+                         (PROPOSAL, experiment()["revision"])).fetchone()
+        return dict(**experiment(bool(row and row["decision"] == "confirmado")),
+                    review=dict(row) if row else None)
+
+
+@router.post("/experiment/review")
+def review_experiment(body: Review):
+    if body.revision != experiment()["revision"]:
+        raise HTTPException(409, "A evidência do experimento mudou.")
+    with closing(database()) as db, db:
+        db.execute("BEGIN IMMEDIATE")
+        existing = db.execute("SELECT decision,reviewer,note FROM experiment_reviews WHERE proposal=? AND revision=?",
+                              (PROPOSAL, body.revision)).fetchone()
+        values = (body.decision, body.reviewer, body.note)
+        if existing and tuple(existing) != values:
+            raise HTTPException(409, "Esta proposta já foi revisada.")
+        if not existing:
+            db.execute("INSERT INTO experiment_reviews(proposal,revision,decision,reviewer,note) VALUES (?,?,?,?,?)",
+                       (PROPOSAL, body.revision, *values))
+    return read_experiment()

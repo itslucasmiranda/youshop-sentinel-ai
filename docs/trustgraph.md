@@ -15,6 +15,14 @@ unusual traffic and an unreversed commission. Each alert is a lead for a human.
 The validation panel computes its confusion matrix from the evaluator output
 and independent fixture labels. These cases do not measure field accuracy.
 
+The rule experiment adds a fourteenth case with a booked commission and
+missing independent sale confirmation. The panel reports the attributed
+amount for missed commission cases in fictional BRL. A named operator can
+accept or reject one versioned check for the lab. Acceptance replays all
+14 fixed cases and displays the resulting false positives, false negatives
+and uncovered commission. A rejected check stays inactive. The test suite
+exercises both choices in temporary databases.
+
 The local review form stores the operator's self-reported name, explanation,
 decision, UTC time and evidence digest. A repeated identical submission is
 idempotent. A changed case requires a new review. Older reviews are retained
