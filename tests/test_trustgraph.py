@@ -1,4 +1,7 @@
 import sqlite3
+import io
+import json
+from unittest.mock import Mock
 from contextlib import closing
 
 import pytest
@@ -85,6 +88,29 @@ def test_unavailable_generation_reports_failure(local, monkeypatch):
     monkeypatch.setattr("sentinel.evidence.HTTPConnection", unavailable)
     response = client.post("/api/orders/demo-order-1/explanation", json={"question":"evento pago"})
     assert response.status_code == 503
+
+
+@pytest.mark.parametrize("ids,status,mode", [
+    (["demo-paid-1", "YS-WEBHOOK-01"], 200, "rascunho_ia"),
+    ([], 200, "evidencia_insuficiente"),
+    (["YS-UNKNOWN"], 503, None),
+])
+def test_generated_citations_are_checked(local, monkeypatch, ids, status, mode):
+    client, _ = local
+    monkeypatch.setenv("SENTINEL_LOCAL_AI", "1")
+    payload = {"choices":[{"message":{"content": json.dumps({"ids": ids})}}]}
+    response = io.BytesIO(json.dumps(payload).encode())
+    response.status = 200
+    transport = Mock()
+    transport.return_value.getresponse.return_value = response
+    monkeypatch.setattr("sentinel.evidence.HTTPConnection", transport)
+    received = client.post("/api/orders/demo-order-1/explanation", json={"question":"Qual evento de pagamento?"})
+    assert received.status_code == status
+    transport.assert_called_once_with("127.0.0.1", 11434, timeout=90)
+    if mode:
+        assert received.json()["mode"] == mode
+    if mode == "rascunho_ia":
+        assert "[demo-paid-1]" in received.json()["draft"]
 
 
 @pytest.mark.parametrize("decision", ["confirmado", "descartado"])
