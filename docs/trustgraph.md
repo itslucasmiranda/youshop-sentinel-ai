@@ -37,19 +37,14 @@ sections, access dates, case revision and event identifiers. Unmatched questions
 produce an insufficient-evidence response. Official references describe the
 platform vocabulary. Case decisions come from synthetic ledger arithmetic.
 
-Optional generation uses a local llama.cpp server with a previously downloaded
-instruct GGUF. Run this from the folder containing the server, substituting the
-local model path:
-
-```powershell
-.\llama-server.exe -m "C:\models\model.gguf" --host 127.0.0.1 --port 18765 -c 4096
-```
-
-In the project terminal set `$env:SENTINEL_LOCAL_AI = "1"` before starting
-Uvicorn. Questions with retrieved evidence now request a Portuguese draft.
-Generation errors surface as HTTP 503. Treat generated text as a draft to
-check against the displayed source summaries and event evidence. The model
-has no tools or authority to write reviews, update rules or move money.
+Optional generation uses Ollama on 127.0.0.1:11434 and a local GGUF imported
+as `sentinel-qwen-local`. Use the [official model import guide](https://docs.ollama.com/import).
+With Ollama running, set `$env:SENTINEL_LOCAL_AI = "1"` in the project
+terminal before starting Uvicorn. The model generates a structured selection
+of evidence IDs. The API validates them and renders cited sentences from the
+underlying facts. An empty selection is an abstention. Network or model errors
+surface as HTTP 503. The model has no tools or authority to write reviews,
+update rules or move money.
 
 ## Build and validate
 

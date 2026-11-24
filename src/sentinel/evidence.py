@@ -5,6 +5,9 @@ import unicodedata
 from http.client import HTTPConnection
 
 REFERENCES = (
+    ("YS-TERMS-01", "autocompra próprio dispositivo rede",
+     "A cláusula 12.3 trata da compra pelo próprio link nas condições descritas nos termos.",
+     "https://www.youshop.co/termosepoliticas", "Cláusula 12.3"),
     ("YS-CREATORS-01", "oferta comissão afiliado creator link afiliação",
      "O guia descreve links de divulgação e a comissão exibida em cada oferta.",
      "https://ajuda.youshop.co/guides/IQ2WaPblIMMUqNhDSKdY", "Etapas 13 e 23"),
@@ -31,15 +34,24 @@ def explain(case, question):
         return answer
     if os.getenv("SENTINEL_LOCAL_AI") != "1":
         return answer
-    context = dict(question=question, reconciliation=case, references=sources)
-    instructions = ("Responda em português em até três frases. Use apenas os eventos sintéticos "
-                    "e as referências fornecidas. Cite seus IDs. Informe lacunas. "
-                    "Não proponha ações financeiras nem presuma regras de comissão.")
-    request = dict(temperature=0, max_tokens=180, messages=[
+    facts = {s["id"]: s["summary"] for s in sources}
+    for event in case["events"]:
+        action = "pagamento" if event["event_type"] == "order_paid" else "reembolso"
+        facts[event["event_id"]] = f"O pedido sintético registra {action} de {event['amount_minor']} centavos."
+    context = dict(question=question, facts=facts)
+    instructions = ("Selecione até três IDs dos fatos que respondem à pergunta. Inclua a referência "
+                    "documental e o evento relevante quando disponíveis. Retorne uma lista vazia "
+                    "quando os fatos não responderem. Use exatamente os IDs fornecidos.")
+    schema = {"type": "object", "properties": {"ids": {"type": "array", "maxItems": 3,
+              "items": {"type": "string", "enum": list(facts)}}}, "required": ["ids"],
+              "additionalProperties": False}
+    request = dict(model="sentinel-qwen-local", temperature=0, max_tokens=180,
+                   response_format={"type": "json_schema", "json_schema": {"name": "evidence", "schema": schema}},
+                   messages=[
         dict(role="system", content=instructions),
         dict(role="user", content=json.dumps(context, ensure_ascii=False)),
     ])
-    connection = HTTPConnection("127.0.0.1", 18765, timeout=90)
+    connection = HTTPConnection("127.0.0.1", 11434, timeout=90)
     try:
         connection.request("POST", "/v1/chat/completions", json.dumps(request), {"Content-Type": "application/json"})
         response = connection.getresponse()
@@ -50,7 +62,15 @@ def explain(case, question):
         draft = choices[0].get("message", {}).get("content") if choices else None
         if not isinstance(draft, str) or not draft.strip():
             raise ValueError("Resposta incompleta.")
-        answer.update(mode="rascunho_ia", draft=draft)
+        selection = json.loads(draft)
+        ids = selection.get("ids") if isinstance(selection, dict) else None
+        if not isinstance(ids, list) or len(ids) > 3 or any(not isinstance(i, str) or i not in facts for i in ids):
+            raise ValueError("Referências inválidas.")
+        if ids:
+            answer.update(mode="rascunho_ia", model="sentinel-qwen-local",
+                          draft=" ".join(f"{facts[i]} [{i}]" for i in dict.fromkeys(ids)))
+        else:
+            answer.update(mode="evidencia_insuficiente", message="A seleção do modelo não encontrou resposta fundamentada.")
     finally:
         connection.close()
     return answer
