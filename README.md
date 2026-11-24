@@ -32,3 +32,6 @@ first run against a fresh file. Running it again inserts zero events. No
 credentials or platform connections are required.
 
 See [data provenance](docs/provenance.md) and the [delivery roadmap](docs/delivery.md).
+
+The [TrustGraph operator guide](docs/trustgraph.md) covers the React console,
+synthetic commission cases, human review, defensive evaluation and local AI.
