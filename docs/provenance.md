@@ -14,6 +14,11 @@
   disputes. This is context for future human review.
   [YouShop terms and policies](https://www.youshop.co/termosepoliticas)
 
+- **YS-REFUND-01.** The official refund guide, steps 1 through 7, describes
+  submitting a refund request for a specific order from the sales report.
+  Commission reversal calculations remain an open question.
+  [YouShop refund guide](https://ajuda.youshop.co/guides/lWitm85hA0nT9JiVZFsj)
+
 ## Synthetic data
 
 `order-lifecycle-v1` is a hand-authored fixture with a payment and full refund

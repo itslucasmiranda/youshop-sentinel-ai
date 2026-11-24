@@ -31,6 +31,7 @@ type Case = {
   review: null | { decision: string; note: string; reviewer: string };
 };
 type Answer = {
+  case_finding?: string;
   message: string;
   draft?: string;
   sources: { id: string; section: string; url: string; summary: string }[];
@@ -199,6 +200,7 @@ function Order({ id }: { id: string }) {
           {answer && (
             <section aria-live="polite">
               <p>{answer.message}</p>
+              {answer.case_finding && <p>{answer.case_finding}</p>}
               {answer.draft && <p>Rascunho gerado por IA · {answer.draft}</p>}
               {answer.sources.map((s) => (
                 <p key={s.id}>

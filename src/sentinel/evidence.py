@@ -5,6 +5,9 @@ import unicodedata
 from http.client import HTTPConnection
 
 REFERENCES = (
+    ("YS-REFUND-01", "reembolso solicitar estorno devolução",
+     "O guia descreve a solicitação de reembolso de um pedido pelo relatório de vendas.",
+     "https://ajuda.youshop.co/guides/lWitm85hA0nT9JiVZFsj", "Etapas 1 a 7"),
     ("YS-TERMS-01", "autocompra próprio dispositivo rede",
      "A cláusula 12.3 trata da compra pelo próprio link nas condições descritas nos termos.",
      "https://www.youshop.co/termosepoliticas", "Cláusula 12.3"),
@@ -32,12 +35,22 @@ def explain(case, question):
     if not sources:
         answer.update(mode="evidencia_insuficiente", message="Nenhuma referência local corresponde à consulta.")
         return answer
-    if os.getenv("SENTINEL_LOCAL_AI") != "1":
-        return answer
     facts = {s["id"]: s["summary"] for s in sources}
+    if words & tokens("saldo líquido total"):
+        facts[case["rule"]] = f"O saldo líquido do pedido sintético é {case['net_minor']} centavos."
+    offer = case["attribution"]
+    if offer and words & tokens("comissão comissões oferta"):
+        facts[offer["rule"]] = (
+            f"A regra da oferta fictícia prevê {offer['expected_minor']} centavos de comissão "
+            f"sobre o saldo remanescente. O registro contém {offer['posted_minor']} centavos."
+        )
+        answer["case_finding"] = facts[offer["rule"]] + f" [{offer['rule']}]"
     for event in case["events"]:
         action = "pagamento" if event["event_type"] == "order_paid" else "reembolso"
-        facts[event["event_id"]] = f"O pedido sintético registra {action} de {event['amount_minor']} centavos."
+        if action in words or words & tokens("histórico eventos"):
+            facts[event["event_id"]] = f"O pedido sintético registra {action} de {event['amount_minor']} centavos."
+    if os.getenv("SENTINEL_LOCAL_AI") != "1":
+        return answer
     context = dict(question=question, facts=facts)
     instructions = ("Selecione até três IDs dos fatos que respondem à pergunta. Inclua a referência "
                     "documental e o evento relevante quando disponíveis. Retorne uma lista vazia "

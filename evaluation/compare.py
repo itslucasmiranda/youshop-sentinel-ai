@@ -22,7 +22,9 @@ def model_answer(events):
     try:
         connection.request("POST", "/api/generate", json.dumps({
             "model":"sentinel-qwen-local", "prompt":prompt, "stream":False,
-            "format":"json", "options":{"temperature":0, "num_predict":120},
+            "format":{"type":"object","properties":{"net_minor":{"type":"integer"},
+                      "review":{"type":"boolean"}},"required":["net_minor","review"]},
+            "options":{"temperature":0, "num_predict":120},
         }), {"Content-Type":"application/json"})
         response = connection.getresponse()
         if response.status != 200:

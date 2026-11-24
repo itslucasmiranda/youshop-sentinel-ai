@@ -74,3 +74,10 @@ project root. The script supplies four fixed event sequences and explicit
 arithmetic instructions to the standalone model. It checks each method's net
 amount and review flag against a hand-written answer key. Timings include
 local HTTP and inference for the model path. They do not measure operator time.
+
+The [recorded Windows run](../evaluation/results-v0.1.0.json) used
+Ollama 0.40.16 and Qwen2.5-0.5B-Instruct Q4_K_M. All four deterministic
+results matched the answer key. The standalone model returned valid structured
+output, matched two amounts and two review flags, and matched both fields
+on zero orders. These four visible cases evaluate this prompt and model.
+They do not estimate performance on unseen orders.
