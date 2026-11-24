@@ -18,3 +18,17 @@ Select `.venv\Scripts\python.exe` as the Python interpreter in VS Code.
 Open [the local interface](http://127.0.0.1:8000/) or check
 [`GET /health`](http://127.0.0.1:8000/health) for HTTP 200 and
 `{"status":"ok"}`. The health endpoint checks API liveness.
+
+## Load local sample events
+
+In a second terminal, run:
+
+```powershell
+.\.venv\Scripts\python.exe -m sentinel.data
+```
+
+The command loads two synthetic events into `sentinel-demo.sqlite3` on the
+first run against a fresh file. Running it again inserts zero events. No
+credentials or platform connections are required.
+
+See [data provenance](docs/provenance.md) and the [delivery roadmap](docs/delivery.md).
