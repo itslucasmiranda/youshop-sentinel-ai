@@ -63,14 +63,20 @@ def scenarios():
         yield name, scenario_events(name, entries), journey, expected
 
 
-def evaluate():
+def evaluate(catalogue=None, require_confirmation=False):
     counts = Counter(dict(tp=0, tn=0, fp=0, fn=0))
+    missed_commission = 0
     cases = []
-    for name, events, journey, expected in scenarios():
+    for name, events, journey, expected in scenarios() if catalogue is None else catalogue:
         decision = reconcile(events, journey)
         actual = decision["status"] == "revisar"
+        if require_confirmation and journey and not journey.sale_confirmed:
+            actual = True
         key = {(True, True): "tp", (False, False): "tn",
                (False, True): "fp", (True, False): "fn"}[expected, actual]
         counts[key] += 1
-        cases.append(dict(name=name, expected_review=expected, actual_review=actual, result=key))
-    return dict(counts=dict(counts), cases=cases, rule=RULE)
+        if key == "fn" and journey:
+            missed_commission += journey.posted_minor
+        cases.append(dict(name=name, expected_review=expected, actual_review=actual,
+                          result=key, revision=decision["revision"]))
+    return dict(counts=dict(counts), cases=cases, rule=RULE, missed_commission_minor=missed_commission)
