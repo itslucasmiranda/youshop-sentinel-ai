@@ -37,7 +37,11 @@ type Answer = {
 };
 type Evaluation = {
   counts: Record<string, number>;
-  cases: { name: string; result: string }[];
+  cases: {
+    name: string;
+    result: string;
+    simulated_seconds_to_alert: number | null;
+  }[];
 };
 const money = (n: number) =>
   (n / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -350,6 +354,10 @@ function App() {
                   {["tp", "tn"].includes(c.result)
                     ? "conforme esperado"
                     : "divergente"}
+                  {c.simulated_seconds_to_alert !== null &&
+                    " · primeiro alerta em " +
+                      c.simulated_seconds_to_alert +
+                      " s simulados"}
                 </li>
               ))}
             </ul>

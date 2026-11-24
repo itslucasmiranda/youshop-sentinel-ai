@@ -38,6 +38,9 @@ def test_evaluation_and_legacy_ledger(local):
     assert client.get("/api/orders/missing").status_code == 404
     assert client.get("/api/validation").json() == evaluate()
     assert evaluate()["counts"] == {"tn": 4, "tp": 9, "fp": 0, "fn": 0}
+    timings = {r["name"]: r["simulated_seconds_to_alert"] for r in evaluate()["cases"]}
+    assert timings["reembolso-excedente"] == 1
+    assert timings["reembolso-integral"] is None
     assert client.get("/static/console.js").status_code == 200
 
 

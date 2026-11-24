@@ -1,6 +1,7 @@
 import hashlib
 import json
 from collections import Counter
+from datetime import datetime
 from .affiliates import AFFILIATE_CASES, affiliate_evidence
 
 RULE = "synthetic-ledger-v1"
@@ -67,7 +68,8 @@ def evaluate(catalogue=None, require_confirmation=False):
     counts = Counter(dict(tp=0, tn=0, fp=0, fn=0))
     missed_commission = 0
     cases = []
-    for name, events, journey, expected in scenarios() if catalogue is None else catalogue:
+    fixtures = scenarios() if catalogue is None else catalogue
+    for name, events, journey, expected in fixtures:
         decision = reconcile(events, journey)
         actual = decision["status"] == "revisar"
         if require_confirmation and journey and not journey.sale_confirmed:
@@ -77,6 +79,20 @@ def evaluate(catalogue=None, require_confirmation=False):
         counts[key] += 1
         if key == "fn" and journey:
             missed_commission += journey.posted_minor
+        # The offer snapshot becomes available with the final fixture event.
+        ordered = decision["events"]
+        first_alert = None
+        for length in range(1, len(ordered) + 1):
+            alert = actual if length == len(ordered) else reconcile(ordered[:length])["status"] == "revisar"
+            if alert:
+                first_alert = ordered[length - 1]
+                break
+        delay = None
+        if first_alert:
+            start = datetime.fromisoformat(ordered[0]["occurred_at_utc"])
+            delay = (datetime.fromisoformat(first_alert["occurred_at_utc"]) - start).total_seconds()
         cases.append(dict(name=name, expected_review=expected, actual_review=actual,
-                          result=key, revision=decision["revision"]))
+                          result=key, revision=decision["revision"],
+                          first_alert_event=first_alert["event_id"] if first_alert else None,
+                          simulated_seconds_to_alert=delay))
     return dict(counts=dict(counts), cases=cases, rule=RULE, missed_commission_minor=missed_commission)

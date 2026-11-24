@@ -14,6 +14,10 @@ Affiliate cases cover self-purchase, linked accounts, conflicting attribution,
 unusual traffic and an unreversed commission. Each alert is a lead for a human.
 The validation panel computes its confusion matrix from the evaluator output
 and independent fixture labels. These cases do not measure field accuracy.
+Each scenario also reports the first alert's event ID and seconds since its
+first synthetic timestamp. Prefixes are evaluated in ledger order. The
+affiliate snapshot is available at the final event. This is simulated event
+time; the separate model benchmark measures elapsed wall-clock time.
 
 The rule experiment adds a fourteenth case with a booked commission and
 missing independent sale confirmation. The panel reports the attributed
