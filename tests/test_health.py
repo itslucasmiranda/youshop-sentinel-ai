@@ -17,3 +17,11 @@ def test_home_is_in_brazilian_portuguese() -> None:
 
     assert response.status_code == 200
     assert 'lang="pt-BR"' in response.text
+
+
+def test_interactive_reference_uses_local_assets():
+    with TestClient(app) as client:
+        page = client.get("/redoc")
+        assert page.status_code == 200
+        assert 'src="/static/swagger-ui-bundle.js"' in page.text
+        assert client.get("/static/swagger-ui.css").status_code == 200
