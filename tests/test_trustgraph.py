@@ -90,30 +90,96 @@ def test_unavailable_generation_reports_failure(local, monkeypatch):
 
     monkeypatch.setattr("sentinel.evidence.HTTPConnection", unavailable)
     response = client.post("/api/orders/demo-order-1/explanation", json={"question":"evento pago"})
-    assert response.status_code == 503
+    assert response.status_code == 200
+    assert response.json()["generation_status"] == "error"
+    assert response.json()["citation_ids"] == ["demo-paid-1"]
 
 
-@pytest.mark.parametrize("ids,status,mode", [
-    (["demo-paid-1", "YS-WEBHOOK-01"], 200, "rascunho_ia"),
-    ([], 200, "evidencia_insuficiente"),
-    (["YS-UNKNOWN"], 503, None),
-])
-def test_generated_citations_are_checked(local, monkeypatch, ids, status, mode):
-    client, _ = local
+def mock_generation(monkeypatch, ids):
     monkeypatch.setenv("SENTINEL_LOCAL_AI", "1")
-    payload = {"choices":[{"message":{"content": json.dumps({"ids": ids})}}]}
+    payload = {"choices": [{"message": {"content": json.dumps({"ids": ids})}}]}
     response = io.BytesIO(json.dumps(payload).encode())
     response.status = 200
     transport = Mock()
     transport.return_value.getresponse.return_value = response
     monkeypatch.setattr("sentinel.evidence.HTTPConnection", transport)
-    received = client.post("/api/orders/demo-order-1/explanation", json={"question":"Qual evento de pagamento?"})
-    assert received.status_code == status
+    return transport
+
+
+@pytest.mark.parametrize("ids,mode,status", [
+    (["demo-paid-1"], "rascunho_ia", "selected"),
+    ([], "evidencia_local", "empty"),
+    (["YS-UNKNOWN"], "evidencia_local", "error"),
+    (["YS-WEBHOOK-01"], "evidencia_local", "error"),
+    (["demo-refund-1"], "evidencia_local", "error"),
+])
+def test_generated_citations_are_checked(local, monkeypatch, ids, mode, status):
+    client, _ = local
+    monkeypatch.delenv("SENTINEL_OLLAMA_MODEL", raising=False)
+    transport = mock_generation(monkeypatch, ids)
+    received = client.post("/api/orders/demo-order-1/explanation", json={"question": "Qual evento de pagamento?"})
+    assert received.status_code == 200
     transport.assert_called_once_with("127.0.0.1", 11434, timeout=90)
-    if mode:
-        assert received.json()["mode"] == mode
-    if mode == "rascunho_ia":
-        assert "[demo-paid-1]" in received.json()["draft"]
+    answer = received.json()
+    assert answer["mode"] == mode
+    assert answer["generation_status"] == status
+    assert answer["citation_ids"] == ["demo-paid-1"]
+    assert "[demo-paid-1]" in answer["message"]
+    request = json.loads(transport.return_value.request.call_args.args[2])
+    assert request["model"] == "sentinel-qwen-local"
+    assert request["max_tokens"] == 180
+    assert request["stream"] is False
+    assert request["reasoning_effort"] == "none"
+
+
+COMMISSION_ORDER = "lab-comissao-apos-reembolso"
+
+
+@pytest.mark.parametrize("ids", [None, [], ["lab-comissao-apos-reembolso-1"], ["demo-refund-1"]])
+def test_commission_explanation_retains_ledger_finding(local, monkeypatch, ids):
+    client, _ = local
+    if ids is not None:
+        transport = mock_generation(monkeypatch, ids)
+        monkeypatch.setenv("SENTINEL_OLLAMA_MODEL", "qwen3:4b")
+    answer = client.post(f"/api/orders/{COMMISSION_ORDER}/explanation",
+                         json={"question": "Por que a comissão ficou em revisão após o reembolso do pedido?"}).json()
+    assert "prevê 0 centavos" in answer["case_finding"]
+    assert "registrou 1000 centavos" in answer["case_finding"]
+    assert answer["citation_ids"] == ["synthetic-offer-v1", "lab-comissao-apos-reembolso-1"]
+    assert answer["sources"] == []
+    if ids is not None:
+        request = json.loads(transport.return_value.request.call_args.args[2])
+        assert request["model"] == "qwen3:4b"
+
+
+@pytest.mark.parametrize("order_id,event_id", [
+    ("demo-order-1", "demo-refund-1"),
+    (COMMISSION_ORDER, "lab-comissao-apos-reembolso-1"),
+])
+def test_refund_cites_only_selected_orders_event(local, order_id, event_id):
+    client, _ = local
+    url = f"/api/orders/{order_id}"
+    case = client.get(url).json()
+    event = next(event for event in case["events"] if event["event_type"] == "order_refunded")
+    answer = client.post(url + "/explanation", json={"question": "Qual evento comprova o reembolso do pedido?"}).json()
+    assert answer["citation_ids"] == [event_id]
+    assert answer["revision"] == case["revision"]
+    assert answer["sources"] == []
+    assert event_id in answer["message"]
+    assert event["occurred_at_utc"] in answer["message"]
+    assert f"{event['amount_minor']} centavos" in answer["message"]
+
+
+def test_withdrawal_date_abstains_before_generation(local, monkeypatch):
+    client, _ = local
+    transport = mock_generation(monkeypatch, ["demo-paid-1"])
+    answer = client.post(f"/api/orders/{COMMISSION_ORDER}/explanation",
+                         json={"question": "Qual é a data do próximo saque deste pedido?"}).json()
+    assert answer["mode"] == "evidencia_insuficiente"
+    assert answer["citation_ids"] == answer["sources"] == []
+    assert "Não há evidência local para determinar a data do próximo saque." == answer["message"]
+    transport.assert_not_called()
+
 
 
 @pytest.mark.parametrize("decision", ["confirmado", "descartado"])

@@ -35,20 +35,37 @@ identifiers. Only code review and a new version can change the rules.
 
 ## Local retrieval and generation
 
-The question endpoint retrieves project-written summaries in Portuguese by
-accent-insensitive keyword matching. It returns source identifiers, links,
-sections, access dates, case revision and event identifiers. Unmatched questions
-produce an insufficient-evidence response. Official references describe the
-platform vocabulary. Case decisions come from synthetic ledger arithmetic.
+The explanation endpoint resolves the requested order and returns its revision.
+`event_ids` lists the order's events for existing API clients. `citation_ids`
+lists the specific facts and references that support the answer. Commission
+review shows expected and booked centavos from the synthetic ledger. Refund
+questions identify the matching event, amount and UTC timestamp. A request for
+the next withdrawal date receives an explicit insufficient-evidence response.
 
-Optional generation uses Ollama on 127.0.0.1:11434 and a local GGUF imported
-as `sentinel-qwen-local`. Use the [official model import guide](https://docs.ollama.com/import).
-With Ollama running, set `$env:SENTINEL_LOCAL_AI = "1"` in the project
-terminal before starting Uvicorn. The model generates a structured selection
-of evidence IDs. The API validates them and renders cited sentences from the
-underlying facts. An empty selection is an abstention. Network or model errors
-surface as HTTP 503. The model has no tools or authority to write reviews,
-update rules or move money.
+Optional Ollama generation runs on 127.0.0.1:11434. The default model is
+`sentinel-qwen-local`. Set `SENTINEL_OLLAMA_MODEL` to use another locally
+installed model. The model selects up to three verified candidate IDs.
+Generation requests [no model thinking](https://docs.ollama.com/api/openai-compatibility)
+and caps the input at 12 candidates, the output at 180 tokens and the
+HTTP read at 16 KiB, with a 90-second socket timeout. Empty, invalid or failed
+model output falls back to the deterministic answer. Case findings and event
+evidence are rendered independently of the model, and reviews still require
+a named human decision.
+
+Run the fixed retrieval suite from the repository root after installing the
+project. The optional live run checks Ollama's installed tags, skips missing
+models, and reports final-answer scores, model selections, generation errors
+and per-question latency. Precision and recall are null when their respective
+denominators are zero. The unit tests use mocked model responses.
+
+```powershell
+.\.venv\Scripts\python.exe -m evaluation.retrieval
+.\.venv\Scripts\python.exe -m evaluation.retrieval --live
+$env:SENTINEL_LOCAL_AI = "1"
+$env:SENTINEL_OLLAMA_MODEL = "qwen3:4b"
+.\.venv\Scripts\python.exe -m uvicorn sentinel.main:app --host 127.0.0.1
+```
+
 
 ## Build and validate
 
