@@ -1,3 +1,4 @@
+import {Dashboard} from "./dashboard";
 import {areas, Guide, Example} from "./guide";
 import {api, money} from "./client";
 import {Overview, Simulation, Defense, Creator, Graph} from "./lab";
@@ -333,7 +334,7 @@ function App() {
       <aside className="rail"><div className="brand"><span aria-hidden="true">S</span> Sentinel</div><p>Central de comissões</p>
         <nav aria-label="Navegação principal">{(Object.keys(areas) as (keyof typeof areas)[]).map(name=><button key={name} aria-current={screen===name?"page":undefined} onClick={()=>show(name)}>{areas[name]}</button>)}</nav>
       </aside><main><header className="topline"><span>YouShop / Operações</span><span>● Dados de demonstração</span></header>
-        {screen==="Visão geral" && <><h1>Resumo da operação</h1><Example open={()=>explore(demoOrder)}/><Overview/></>}
+        {screen==="Visão geral" && <><Dashboard open={explore}/><Example open={()=>explore(demoOrder)}/><Overview/></>}
         {screen==="Ajuda" && <Guide/>}{screen==="Simulação" && <Simulation open={explore}/>}
         {screen==="Defesa" && <><Defense/><RuleExperiment/></>}{screen==="Creator" && <Creator open={explore}/>}
         {screen==="TrustGraph" && <><h1>Conferir pedido</h1><p>Veja o que foi pago, quanto voltou ao comprador e qual comissão ficou registrada.</p>
