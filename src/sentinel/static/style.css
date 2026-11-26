@@ -1,0 +1,86 @@
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  background: #f6f6f1;
+  color: #18302a;
+  font:
+    16px/1.55 system-ui,
+    sans-serif;
+}
+header {
+  background: #143f36;
+  color: white;
+  padding: 1rem max(5vw, calc((100vw - 54rem) / 2));
+  font-weight: 700;
+}
+main {
+  max-width: 56rem;
+  margin: auto;
+  padding: 2rem 1rem;
+}
+h1 {
+  font-size: clamp(2rem, 6vw, 3.2rem);
+  line-height: 1.1;
+}
+h2,
+h3 {
+  margin-bottom: 0.4rem;
+}
+input,
+select,
+button {
+  font: inherit;
+  padding: 0.55rem 0.75rem;
+  border-radius: 0.4rem;
+  border: 1px solid #80978a;
+}
+label {
+  display: grid;
+  gap: 0.25rem;
+  margin-bottom: 0.7rem;
+}
+button {
+  background: #155343;
+  color: white;
+  cursor: pointer;
+}
+button:disabled {
+  opacity: 0.6;
+}
+.totals {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.totals div,
+form,
+details {
+  padding: 1rem;
+  background: white;
+  border: 1px solid #d2dbd1;
+  border-radius: 0.5rem;
+}
+.totals div {
+  flex: 1;
+}
+.totals strong {
+  display: block;
+  font-size: 1.6rem;
+}
+li {
+  margin-bottom: 0.6rem;
+  overflow-wrap: anywhere;
+}
+form,
+details,
+footer {
+  margin-top: 1.5rem;
+}
+a {
+  color: #125b4a;
+}
+summary {
+  cursor: pointer;
+}

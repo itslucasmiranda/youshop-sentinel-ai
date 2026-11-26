@@ -1,7 +1,8 @@
 # YouShop Sentinel AI
 
-Local prototype for studying creator commission integrity. The API is built with
-FastAPI and the landing page is in Brazilian Portuguese.
+Investigate synthetic creator commissions from a promotion link through a
+payment, refund and ledger entry. FastAPI serves a Brazilian Portuguese React
+console. SQLite records human decisions against versioned evidence.
 
 ## Run on Windows
 
@@ -32,3 +33,17 @@ first run against a fresh file. Running it again inserts zero events. No
 credentials or platform connections are required.
 
 See [data provenance](docs/provenance.md) and the [delivery roadmap](docs/delivery.md).
+
+The [TrustGraph operator guide](docs/trustgraph.md) covers the React console,
+synthetic commission cases, human review, defensive evaluation and local AI.
+
+## Walk through one order
+
+Select `lab-comissao-apos-reembolso`. Its fictional offer has a BRL 100
+payment, a full refund, and BRL 10 in booked commission. Compare the expected
+amount, inspect the event identifiers and ask which commission remained after
+the refund. Open the rule experiment to review a separate fixed scenario and
+inspect the effect of a proposed check. All decisions apply to the local lab.
+
+See [research and evaluation](docs/discovery.md) for the experiments and
+[source provenance](docs/provenance.md) for the official material used.

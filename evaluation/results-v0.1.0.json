@@ -1,0 +1,74 @@
+[
+  {
+    "case": "venda",
+    "method": "trustgraph",
+    "net_minor": 10000,
+    "review": false,
+    "correct": true,
+    "seconds": 0.0001,
+    "error": null
+  },
+  {
+    "case": "venda",
+    "method": "local_model",
+    "net_minor": 10000,
+    "review": true,
+    "correct": false,
+    "seconds": 0.5782,
+    "error": null
+  },
+  {
+    "case": "reembolso-integral",
+    "method": "trustgraph",
+    "net_minor": 0,
+    "review": false,
+    "correct": true,
+    "seconds": 0.0001,
+    "error": null
+  },
+  {
+    "case": "reembolso-integral",
+    "method": "local_model",
+    "net_minor": 0,
+    "review": true,
+    "correct": false,
+    "seconds": 0.4522,
+    "error": null
+  },
+  {
+    "case": "reembolso-sem-venda",
+    "method": "trustgraph",
+    "net_minor": -3000,
+    "review": true,
+    "correct": true,
+    "seconds": 0.0001,
+    "error": null
+  },
+  {
+    "case": "reembolso-sem-venda",
+    "method": "local_model",
+    "net_minor": 3000,
+    "review": true,
+    "correct": false,
+    "seconds": 0.5466,
+    "error": null
+  },
+  {
+    "case": "reembolso-excedente",
+    "method": "trustgraph",
+    "net_minor": -100,
+    "review": true,
+    "correct": true,
+    "seconds": 0.0001,
+    "error": null
+  },
+  {
+    "case": "reembolso-excedente",
+    "method": "local_model",
+    "net_minor": 1000,
+    "review": true,
+    "correct": false,
+    "seconds": 0.5213,
+    "error": null
+  }
+]
