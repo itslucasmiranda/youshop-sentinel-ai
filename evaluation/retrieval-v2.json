@@ -1,0 +1,391 @@
+{
+  "suite": "evidence-retrieval-v2",
+  "skipped_models": {},
+  "methods": {
+    "deterministic": {
+      "source": "deterministic",
+      "cases": [
+        {
+          "case": "commission_review",
+          "order_id": "lab-comissao-apos-reembolso",
+          "seconds": 0.0014,
+          "expected_citations": [
+            "synthetic-offer-v1",
+            "lab-comissao-apos-reembolso-1"
+          ],
+          "citations": [
+            "synthetic-offer-v1",
+            "lab-comissao-apos-reembolso-1"
+          ],
+          "precision": 1.0,
+          "recall": 1.0,
+          "abstained": false,
+          "generation": "not_called",
+          "model_citations": null,
+          "passed": true
+        },
+        {
+          "case": "lab_refund",
+          "order_id": "lab-comissao-apos-reembolso",
+          "seconds": 0.0,
+          "expected_citations": [
+            "lab-comissao-apos-reembolso-1"
+          ],
+          "citations": [
+            "lab-comissao-apos-reembolso-1"
+          ],
+          "precision": 1.0,
+          "recall": 1.0,
+          "abstained": false,
+          "generation": "not_called",
+          "model_citations": null,
+          "passed": true
+        },
+        {
+          "case": "demo_refund",
+          "order_id": "demo-order-1",
+          "seconds": 0.0,
+          "expected_citations": [
+            "demo-refund-1"
+          ],
+          "citations": [
+            "demo-refund-1"
+          ],
+          "precision": 1.0,
+          "recall": 1.0,
+          "abstained": false,
+          "generation": "not_called",
+          "model_citations": null,
+          "passed": true
+        },
+        {
+          "case": "withdrawal_date",
+          "order_id": "lab-comissao-apos-reembolso",
+          "seconds": 0.0,
+          "expected_citations": [],
+          "citations": [],
+          "precision": null,
+          "recall": null,
+          "abstained": true,
+          "generation": "not_called",
+          "model_citations": null,
+          "passed": true
+        },
+        {
+          "case": "refund_guide",
+          "order_id": "demo-order-1",
+          "seconds": 0.0,
+          "expected_citations": [
+            "YS-REFUND-01"
+          ],
+          "citations": [
+            "YS-REFUND-01"
+          ],
+          "precision": 1.0,
+          "recall": 1.0,
+          "abstained": false,
+          "generation": "not_called",
+          "model_citations": null,
+          "passed": true
+        },
+        {
+          "case": "payment_event",
+          "order_id": "demo-order-1",
+          "seconds": 0.0,
+          "expected_citations": [
+            "demo-paid-1"
+          ],
+          "citations": [
+            "demo-paid-1"
+          ],
+          "precision": 1.0,
+          "recall": 1.0,
+          "abstained": false,
+          "generation": "not_called",
+          "model_citations": null,
+          "passed": true
+        },
+        {
+          "case": "missing_refund",
+          "order_id": "lab-venda",
+          "seconds": 0.0,
+          "expected_citations": [],
+          "citations": [],
+          "precision": null,
+          "recall": null,
+          "abstained": true,
+          "generation": "not_called",
+          "model_citations": null,
+          "passed": true
+        }
+      ],
+      "passed": 7,
+      "generation_errors": 0,
+      "model_exact_matches": 0
+    },
+    "sentinel-qwen-local": {
+      "source": "live_ollama",
+      "cases": [
+        {
+          "case": "commission_review",
+          "order_id": "lab-comissao-apos-reembolso",
+          "seconds": 3.6887,
+          "expected_citations": [
+            "synthetic-offer-v1",
+            "lab-comissao-apos-reembolso-1"
+          ],
+          "citations": [
+            "synthetic-offer-v1",
+            "lab-comissao-apos-reembolso-1"
+          ],
+          "precision": 1.0,
+          "recall": 1.0,
+          "abstained": false,
+          "generation": "selected",
+          "model_citations": [
+            "synthetic-offer-v1",
+            "lab-comissao-apos-reembolso-1"
+          ],
+          "passed": true
+        },
+        {
+          "case": "lab_refund",
+          "order_id": "lab-comissao-apos-reembolso",
+          "seconds": 0.7146,
+          "expected_citations": [
+            "lab-comissao-apos-reembolso-1"
+          ],
+          "citations": [
+            "lab-comissao-apos-reembolso-1"
+          ],
+          "precision": 1.0,
+          "recall": 1.0,
+          "abstained": false,
+          "generation": "selected",
+          "model_citations": [
+            "lab-comissao-apos-reembolso-1"
+          ],
+          "passed": true
+        },
+        {
+          "case": "demo_refund",
+          "order_id": "demo-order-1",
+          "seconds": 0.537,
+          "expected_citations": [
+            "demo-refund-1"
+          ],
+          "citations": [
+            "demo-refund-1"
+          ],
+          "precision": 1.0,
+          "recall": 1.0,
+          "abstained": false,
+          "generation": "selected",
+          "model_citations": [
+            "demo-refund-1"
+          ],
+          "passed": true
+        },
+        {
+          "case": "withdrawal_date",
+          "order_id": "lab-comissao-apos-reembolso",
+          "seconds": 0.0,
+          "expected_citations": [],
+          "citations": [],
+          "precision": null,
+          "recall": null,
+          "abstained": true,
+          "generation": "not_called",
+          "model_citations": null,
+          "passed": true
+        },
+        {
+          "case": "refund_guide",
+          "order_id": "demo-order-1",
+          "seconds": 0.5209,
+          "expected_citations": [
+            "YS-REFUND-01"
+          ],
+          "citations": [
+            "YS-REFUND-01"
+          ],
+          "precision": 1.0,
+          "recall": 1.0,
+          "abstained": false,
+          "generation": "selected",
+          "model_citations": [
+            "YS-REFUND-01"
+          ],
+          "passed": true
+        },
+        {
+          "case": "payment_event",
+          "order_id": "demo-order-1",
+          "seconds": 0.4958,
+          "expected_citations": [
+            "demo-paid-1"
+          ],
+          "citations": [
+            "demo-paid-1"
+          ],
+          "precision": 1.0,
+          "recall": 1.0,
+          "abstained": false,
+          "generation": "selected",
+          "model_citations": [
+            "demo-paid-1"
+          ],
+          "passed": true
+        },
+        {
+          "case": "missing_refund",
+          "order_id": "lab-venda",
+          "seconds": 0.0001,
+          "expected_citations": [],
+          "citations": [],
+          "precision": null,
+          "recall": null,
+          "abstained": true,
+          "generation": "not_called",
+          "model_citations": null,
+          "passed": true
+        }
+      ],
+      "passed": 7,
+      "generation_errors": 0,
+      "model_exact_matches": 5
+    },
+    "qwen3:4b": {
+      "source": "live_ollama",
+      "cases": [
+        {
+          "case": "commission_review",
+          "order_id": "lab-comissao-apos-reembolso",
+          "seconds": 22.973,
+          "expected_citations": [
+            "synthetic-offer-v1",
+            "lab-comissao-apos-reembolso-1"
+          ],
+          "citations": [
+            "synthetic-offer-v1",
+            "lab-comissao-apos-reembolso-1"
+          ],
+          "precision": 1.0,
+          "recall": 1.0,
+          "abstained": false,
+          "generation": "selected",
+          "model_citations": [
+            "synthetic-offer-v1",
+            "lab-comissao-apos-reembolso-1"
+          ],
+          "passed": true
+        },
+        {
+          "case": "lab_refund",
+          "order_id": "lab-comissao-apos-reembolso",
+          "seconds": 3.5623,
+          "expected_citations": [
+            "lab-comissao-apos-reembolso-1"
+          ],
+          "citations": [
+            "lab-comissao-apos-reembolso-1"
+          ],
+          "precision": 1.0,
+          "recall": 1.0,
+          "abstained": false,
+          "generation": "selected",
+          "model_citations": [
+            "lab-comissao-apos-reembolso-1"
+          ],
+          "passed": true
+        },
+        {
+          "case": "demo_refund",
+          "order_id": "demo-order-1",
+          "seconds": 3.1741,
+          "expected_citations": [
+            "demo-refund-1"
+          ],
+          "citations": [
+            "demo-refund-1"
+          ],
+          "precision": 1.0,
+          "recall": 1.0,
+          "abstained": false,
+          "generation": "selected",
+          "model_citations": [
+            "demo-refund-1"
+          ],
+          "passed": true
+        },
+        {
+          "case": "withdrawal_date",
+          "order_id": "lab-comissao-apos-reembolso",
+          "seconds": 0.0,
+          "expected_citations": [],
+          "citations": [],
+          "precision": null,
+          "recall": null,
+          "abstained": true,
+          "generation": "not_called",
+          "model_citations": null,
+          "passed": true
+        },
+        {
+          "case": "refund_guide",
+          "order_id": "demo-order-1",
+          "seconds": 3.1151,
+          "expected_citations": [
+            "YS-REFUND-01"
+          ],
+          "citations": [
+            "YS-REFUND-01"
+          ],
+          "precision": 1.0,
+          "recall": 1.0,
+          "abstained": false,
+          "generation": "selected",
+          "model_citations": [
+            "YS-REFUND-01"
+          ],
+          "passed": true
+        },
+        {
+          "case": "payment_event",
+          "order_id": "demo-order-1",
+          "seconds": 2.4741,
+          "expected_citations": [
+            "demo-paid-1"
+          ],
+          "citations": [
+            "demo-paid-1"
+          ],
+          "precision": 1.0,
+          "recall": 1.0,
+          "abstained": false,
+          "generation": "selected",
+          "model_citations": [
+            "demo-paid-1"
+          ],
+          "passed": true
+        },
+        {
+          "case": "missing_refund",
+          "order_id": "lab-venda",
+          "seconds": 0.0001,
+          "expected_citations": [],
+          "citations": [],
+          "precision": null,
+          "recall": null,
+          "abstained": true,
+          "generation": "not_called",
+          "model_citations": null,
+          "passed": true
+        }
+      ],
+      "passed": 7,
+      "generation_errors": 0,
+      "model_exact_matches": 5
+    }
+  }
+}
