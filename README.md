@@ -1,49 +1,43 @@
 # YouShop Sentinel AI
 
-Investigate synthetic creator commissions from a promotion link through a
-payment, refund and ledger entry. FastAPI serves a Brazilian Portuguese React
-console. SQLite records human decisions against versioned evidence.
+Este protótipo ajuda um revisor a rastrear divergências de comissão. O exemplo principal acompanha uma venda fictícia de R$ 100,00, um reembolso integral e uma comissão de R$ 10,00 que continuou registrada. O painel usa dados sintéticos e guarda as decisões humanas em SQLite local.
 
-## Run on Windows
+## Abrir no Windows
 
-Open this folder in VS Code. In its PowerShell terminal, run:
+Com Python 3.12 instalado, abra a pasta do repositório e execute no PowerShell:
 
 ```powershell
 py -3.12 -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -e ".[dev]"
-.\.venv\Scripts\python.exe -m pytest -q
-.\.venv\Scripts\python.exe -m uvicorn sentinel.main:app --host 127.0.0.1
+.\.venv\Scripts\python.exe -m sentinel.data
+.\.venv\Scripts\python.exe -m uvicorn sentinel.main:app --host 127.0.0.1 --port 8001
 ```
 
-Select `.venv\Scripts\python.exe` as the Python interpreter in VS Code.
-Open [the local interface](http://127.0.0.1:8000/) or check
-[`GET /health`](http://127.0.0.1:8000/health) for HTTP 200 and
-`{"status":"ok"}`. The health endpoint checks API liveness.
+Acesse [o painel local](http://127.0.0.1:8001/). Mantenha esse terminal aberto durante a demonstração. Para encerrar, pressione Ctrl+C. A carga dos dois eventos de exemplo pode ser repetida.
 
-## Load local sample events
+## Demonstração em três perguntas
 
-In a second terminal, run:
+O painel abre no pedido **lab-comissao-apos-reembolso**. Se estiver em outro pedido, use **Abrir exemplo de comissão após reembolso**. Em **Consultar evidências**, faça uma pergunta por vez.
+
+1. **Por que a comissão ficou em revisão após o reembolso do pedido?** A regra da oferta prevê R$ 0,00 depois do reembolso integral. O registro mostra R$ 10,00. A diferença exige revisão humana.
+2. **Qual evento comprova o reembolso deste pedido?** A evidência é o evento `lab-comissao-apos-reembolso-1`, no valor de R$ 100,00.
+3. **Qual é a data do próximo saque?** O sistema informa que as evidências disponíveis são insuficientes.
+
+A demonstração funciona com a conciliação local. Para experimentar a seleção de evidências por IA, mantenha o Ollama em execução com um modelo instalado, defina as variáveis abaixo e inicie novamente o servidor.
 
 ```powershell
-.\.venv\Scripts\python.exe -m sentinel.data
+$env:SENTINEL_LOCAL_AI = "1"
+$env:SENTINEL_OLLAMA_MODEL = "sentinel-qwen-local"
 ```
 
-The command loads two synthetic events into `sentinel-demo.sqlite3` on the
-first run against a fresh file. Running it again inserts zero events. No
-credentials or platform connections are required.
+O modelo compacto é o padrão. Para experimentar o outro modelo avaliado, use `qwen3:4b`. Os valores e os eventos vêm dos registros sintéticos. O formulário de revisão registra a decisão do operador.
 
-See [data provenance](docs/provenance.md) and the [delivery roadmap](docs/delivery.md).
+## Verificar resultados
 
-The [TrustGraph operator guide](docs/trustgraph.md) covers the React console,
-synthetic commission cases, human review, defensive evaluation and local AI.
+```powershell
+.\.venv\Scripts\python.exe -m pytest -q
+.\.venv\Scripts\python.exe -m evaluation.retrieval
+.\.venv\Scripts\python.exe -m evaluation.retrieval --live
+```
 
-## Walk through one order
-
-Select `lab-comissao-apos-reembolso`. Its fictional offer has a BRL 100
-payment, a full refund, and BRL 10 in booked commission. Compare the expected
-amount, inspect the event identifiers and ask which commission remained after
-the refund. Open the rule experiment to review a separate fixed scenario and
-inspect the effect of a proposed check. All decisions apply to the local lab.
-
-See [research and evaluation](docs/discovery.md) for the experiments and
-[source provenance](docs/provenance.md) for the official material used.
+A avaliação usa sete perguntas com respostas esperadas. A opção `--live` consulta os modelos disponíveis no Ollama local e registra as respostas, citações e tempos observados. Veja os [resultados desta entrega](evaluation/retrieval-v2.json), o [guia do operador](docs/trustgraph.md), a [pesquisa](docs/discovery.md), a [origem dos dados](docs/provenance.md) e o [roteiro do projeto](docs/delivery.md).
