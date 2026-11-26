@@ -84,3 +84,5 @@ a {
 summary {
   cursor: pointer;
 }
+nav,.graph{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center}.graph{padding:0;list-style:none}.graph li{padding:.7rem;border:1px solid #bfd3cb;border-radius:.5rem;background:white}.graph li+li::before{content:"→ ";color:#125b4a}nav button[aria-pressed=true]{outline:3px solid #779c80;outline-offset:2px}
+.graph details{padding:0;margin:0;border:0}.graph details p{margin-bottom:0}
