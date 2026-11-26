@@ -1,3 +1,5 @@
+import {api, money} from "./client";
+import {Overview, Simulation, Defense, Creator, Graph} from "./lab";
 import React, { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 
@@ -17,7 +19,7 @@ type Attribution = {
   expected_minor: number;
   posted_minor: number;
 };
-type Case = {
+export type Case = {
   order_id: string;
   rule: string;
   revision: string;
@@ -45,31 +47,10 @@ type Evaluation = {
     simulated_seconds_to_alert: number | null;
   }[];
 };
-const money = (n: number) =>
-  (n / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 const demoOrder = "lab-comissao-apos-reembolso";
 const displayAmounts = (text: string) =>
   text.replace(/(-?\d+) centavos/g, (_, amount: string) => money(Number(amount)));
 const path = (id: string) => "/api/orders/" + encodeURIComponent(id);
-async function api<T>(url: string, body?: unknown): Promise<T> {
-  const res = await fetch(
-    url,
-    body === undefined
-      ? {}
-      : {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(body),
-        },
-  );
-  if (!res.ok) {
-    const e = await res.json();
-    throw Error(
-      typeof e.detail === "string" ? e.detail : "Confira os dados informados.",
-    );
-  }
-  return res.json();
-}
 function Order({ id }: { id: string }) {
   const [data, setData] = useState<Case>(),
     [answer, setAnswer] = useState<Answer>(),
@@ -313,6 +294,8 @@ function RuleExperiment() {
   );
 }
 function App() {
+  const [screen, show] = useState("TrustGraph");
+  function explore(order:string){select(order);show("TrustGraph")}
   const [ids, setIds] = useState<string[]>([]),
     [id, select] = useState(""),
     [scores, setScores] = useState<Evaluation>(),
@@ -333,12 +316,15 @@ function App() {
     <>
       <header>YouShop Sentinel AI</header>
       <main>
-        <h1>Conciliação de pedidos</h1>
+        <h1>YouShop Sentinel AI</h1><nav aria-label="Áreas do laboratório">{["Visão geral","Simulação","Defesa","TrustGraph","Creator"].map(name=><button key={name} aria-pressed={screen===name} onClick={()=>show(name)}>{name}</button>)}</nav>
+        {screen==="Visão geral" && <Overview/>}{screen==="Simulação" && <Simulation open={explore}/>}
+        {screen==="Defesa" && <><Defense/><RuleExperiment/></>}{screen==="Creator" && <Creator open={explore}/>}
+        {screen==="TrustGraph" && <><h2>Conciliação de pedidos</h2>
         {error && <p role="alert">{error}</p>}
         <label>
           Pedido sintético
           <select value={id} onChange={(e) => select(e.target.value)}>
-            {ids.map((v) => (
+            {(id && !ids.includes(id) ? [id,...ids] : ids).map((v) => (
               <option key={v}>{v}</option>
             ))}
           </select>
@@ -346,7 +332,7 @@ function App() {
         {ids.includes(demoOrder) && id !== demoOrder && (
           <button onClick={() => select(demoOrder)}>Abrir exemplo de comissão após reembolso</button>
         )}
-        {id && <Order key={id} id={id} />}
+        {id && <><Graph key={"graph"+id} id={id}/><Order key={id} id={id}/></>}
         {scores && (
           <details>
             <summary>
@@ -373,7 +359,7 @@ function App() {
             </ul>
           </details>
         )}
-        <RuleExperiment />
+        <RuleExperiment /></>}
         <footer>
           <a href="/docs">Documentação da API</a>
         </footer>

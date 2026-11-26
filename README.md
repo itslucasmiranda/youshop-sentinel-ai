@@ -41,3 +41,11 @@ O modelo compacto é o padrão. Para experimentar o outro modelo avaliado, use `
 ```
 
 A avaliação usa sete perguntas com respostas esperadas. A opção `--live` consulta os modelos disponíveis no Ollama local e registra as respostas, citações e tempos observados. Veja os [resultados desta entrega](evaluation/retrieval-v2.json), o [guia do operador](docs/trustgraph.md), a [pesquisa](docs/discovery.md), a [origem dos dados](docs/provenance.md) e o [roteiro do projeto](docs/delivery.md).
+
+## Laboratório ampliado
+
+Use a navegação acima da conciliação. **Visão geral** resume 10.000 pedidos reproduzíveis, 500 creators e 100 produtos ao longo de 90 dias fictícios. Um pedido pode conter mais de um evento. **Simulação** monta uma bateria com controle regular e combinações autorizadas de reembolso, confirmação ausente e oferta vencida. O Ollama pode selecionar os casos. Com a IA desligada, o planejador prioriza lacunas observadas no controle inicial. Cada resultado abre o pedido no **TrustGraph**, onde os nós revelam valores e identificadores.
+
+Em **Defesa**, o sistema mede quais verificações adicionais recuperam casos perdidos em 25 pedidos. Um revisor identificado pode aprovar a repetição em outros 25 pedidos ou rejeitar a proposta. Essas amostras seguem as mesmas regras sintéticas. O parecer fica salvo no SQLite. **Creator** apresenta 20 pedidos por perfil fictício com valores previstos e registrados. O seletor de perfis serve à demonstração local, sem autenticação de usuários reais.
+
+Para o experimento de oferta vencida, a validade sintética termina na véspera da venda; nos outros casos ela termina 30 dias depois. Os números da carteira refletem a distribuição planejada dos cenários.

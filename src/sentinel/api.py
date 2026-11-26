@@ -8,6 +8,7 @@ from typing import Annotated, Literal
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field, StringConstraints
 
+from . import twin
 from .data import SCHEMA
 from .evidence import explain
 from .experiment import PROPOSAL, experiment
@@ -39,6 +40,8 @@ def database():
 
 def case_details(db, order_id):
     events, journey = LAB.get(order_id, (None, None))
+    if events is None:
+        events, journey = twin.lookup(order_id)
     if events is None:
         events = [dict(row) for row in db.execute(
             "SELECT * FROM synthetic_events WHERE order_id = ?", (order_id,))]
@@ -119,14 +122,52 @@ def read_experiment():
 def review_experiment(body: Review):
     if body.revision != experiment()["revision"]:
         raise HTTPException(409, "A evidência do experimento mudou.")
+    record_decision(PROPOSAL, body)
+    return read_experiment()
+
+
+def record_decision(proposal, body):
     with closing(database()) as db, db:
         db.execute("BEGIN IMMEDIATE")
         existing = db.execute("SELECT decision,reviewer,note FROM experiment_reviews WHERE proposal=? AND revision=?",
-                              (PROPOSAL, body.revision)).fetchone()
+                              (proposal, body.revision)).fetchone()
         values = (body.decision, body.reviewer, body.note)
         if existing and tuple(existing) != values:
             raise HTTPException(409, "Esta proposta já foi revisada.")
         if not existing:
             db.execute("INSERT INTO experiment_reviews(proposal,revision,decision,reviewer,note) VALUES (?,?,?,?,?)",
-                       (PROPOSAL, body.revision, *values))
-    return read_experiment()
+                       (proposal, body.revision, *values))
+
+
+@router.get("/twin")
+def twin_summary():
+    return twin.summary()
+
+
+@router.get("/twin/creators/{number}")
+def creator(number: Annotated[int, Field(ge=1, le=500)]):
+    return twin.creator_orders(number)
+
+
+@router.post("/twin/plan")
+def generate_plan():
+    return twin.plan()
+
+
+@router.get("/twin/proposals")
+def read_proposals():
+    result, _ = twin.proposals()
+    with closing(database()) as db:
+        decision = db.execute("SELECT decision FROM experiment_reviews WHERE proposal=? AND revision=?",
+                              ("twin-v1", result["revision"])).fetchone()
+    return dict(**result, decision=decision[0] if decision else None,
+                replay=twin.proposals(approved=True)[1] if decision and decision[0] == "confirmado" else None)
+
+
+@router.post("/twin/proposals/review")
+def review_proposals(body: Review):
+    result, _ = twin.proposals()
+    if body.revision != result["revision"]:
+        raise HTTPException(409, "A simulação mudou.")
+    record_decision("twin-v1", body)
+    return read_proposals()
