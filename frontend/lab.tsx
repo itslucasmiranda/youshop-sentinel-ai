@@ -44,9 +44,22 @@ export function Simulation({open}:{open:(id:string)=>void}){
     wait(true); fail("");
     try {set(await api<Plan>("/api/twin/plan",{}))} catch(e){fail(String(e))} finally{wait(false)}
   }
-  return <section><h1>Testar cenários</h1><p>Execute vendas fictícias com situações conhecidas. Se o cenário pede revisão e a regra libera o pedido, você encontrou uma falha no teste.</p>
-    <button disabled={busy} onClick={run}>{busy?"Executando…":"Selecionar e executar cenários"}</button>{error && <p role="alert">{error}</p>}
-    {plan && <><p>{plan.source}</p><ul>{plan.cases.map(c=><li key={c.order}><strong>{c.description}</strong> · Esperado: {c.expected?"revisão":"conciliado"} · Observado: {c.baseline?"revisão":"conciliado"} <button onClick={()=>open(c.order)}>Ver {c.order}</button></li>)}</ul></>}</section>
+  const [onlyMisses, filter] = useState(false);
+  const misses = plan?.cases.filter(c=>c.expected !== c.baseline).length ?? 0;
+  return <section><div className="workhead"><div><h1>Testar cenários</h1><p>Descubra em quais vendas a regra deixa passar um problema.</p></div>
+    <button disabled={busy} onClick={run}>{busy?"Executando…":plan?"Executar novamente":"Executar simulação"} →</button></div>
+    {error && <p role="alert">{error}</p>}
+    {!plan && <div className="workflow"><h2>Como funciona o teste</h2><div className="stages">
+      <div><b>Selecionar vendas</b><p>O sistema reúne uma venda regular e pedidos com situações conhecidas.</p></div>
+      <div><b>Conferir o alerta</b><p>A regra decide se cada pedido merece revisão.</p></div>
+      <div><b>Investigar diferenças</b><p>Abra o pedido para comparar a decisão com o resultado esperado.</p></div></div></div>}
+    {plan && <><div className="verdict"><div><small>Resultado da rodada</small><h2>{misses} de {plan.cases.length} casos divergiram</h2><p>Uma divergência ocorre quando a decisão da regra difere da resposta conhecida do teste.</p></div></div>
+      <div className="sectionbar"><h2>Casos testados</h2><label className="inlinecheck"><input type="checkbox" checked={onlyMisses} onChange={e=>filter(e.target.checked)}/>Só divergências</label></div>
+      <div className="casegrid">{plan.cases.filter(c=>!onlyMisses || c.expected!==c.baseline).map(c=><article className="casecard" key={c.order}>
+        <span className={c.expected===c.baseline?"pill":"pill amber"}>{c.expected===c.baseline?"Decisão correta":c.expected?"Problema sem alerta":"Alerta indevido"}</span>
+        <h3>{c.description}</h3><dl><dt>Deveria</dt><dd>{c.expected?"Pedir revisão":"Liberar"}</dd><dt>A regra decidiu</dt><dd>{c.baseline?"Pedir revisão":"Liberar"}</dd></dl>
+        <button onClick={()=>open(c.order)}>Investigar {c.order} ↗</button></article>)}</div>
+      {onlyMisses && !misses && <p>Todos os casos tiveram a decisão esperada.</p>}<p className="subtle">Método de seleção · {plan.source}</p></>}</section>
 }
 
 export function Defense(){
@@ -59,17 +72,31 @@ export function Defense(){
   }
   return <section><h1>Avaliar regras</h1><p>Usamos 25 pedidos para encontrar melhorias. Autorize o teste em outros 25 para ver quantos problemas a nova regra consegue identificar.</p>
     {(error||failure)&&<p role="alert">{error||failure}</p>}
-    {result&&<><h3>Verificações sugeridas</h3><ul>{result.checks.map(c=><li key={c}>{c}</li>)}</ul><h3>Antes da revisão</h3><CountsView counts={result.baseline}/>
-    {result.decision?<p>Parecer registrado: {result.decision}</p>:<form onSubmit={decide}><label>Revisor <input name="reviewer" required maxLength={80}/></label><label>Justificativa <input name="note" required maxLength={500}/></label>
-    <label>Decisão <select name="decision"><option value="confirmado">Aprovar repetição no laboratório</option><option value="descartado">Rejeitar</option></select></label><button disabled={busy}>Registrar decisão</button></form>}
+    {result&&<><div className="verdict"><div><small>Diagnóstico da regra inicial</small><h2>{result.baseline.fn} problemas passaram sem alerta</h2><p>Esses pedidos deveriam ter sido encaminhados a uma pessoa para conferência.</p></div></div>
+      <div className="casegrid"><article className="casecard"><h2>O que muda no teste?</h2><p>As verificações sugeridas pedem revisão nestas situações:</p><ul>{result.checks.map(c=><li key={c}>{c}</li>)}</ul></article>
+      <article className="casecard"><h2>Decisão do revisor</h2><p>A aprovação repete o teste nos 25 pedidos reservados. A rejeição encerra a proposta.</p>
+      {result.decision?<strong>Parecer registrado · {result.decision}</strong>:<details><summary>Revisar proposta</summary><form onSubmit={decide}><label>Revisor <input name="reviewer" required maxLength={80}/></label><label>Justificativa <input name="note" required maxLength={500}/></label>
+      <label>Decisão <select name="decision"><option value="confirmado">Aprovar teste</option><option value="descartado">Rejeitar proposta</option></select></label><button disabled={busy}>Registrar decisão</button></form></details>}</article></div>
+      <h3>Resultado inicial</h3><CountsView counts={result.baseline}/>
     {result.replay&&<><h3>Após aprovação</h3><CountsView counts={result.replay}/></>}</>}</section>
 }
 
 export function Creator({open}:{open:(id:string)=>void}){
   const [n,set]=useState(1);
   const {result,error}=useRead<Row[]>("/api/twin/creators/"+n);
-  return <section><h1>Comissões por criador</h1><p>Escolha quem divulgou o produto. Compare a comissão calculada pela oferta com o valor lançado em cada venda.</p><label>Perfil de demonstração <select value={n} onChange={e=>set(Number(e.target.value))}>{Array.from({length:500},(_,i)=><option key={i} value={i+1}>creator-{String(i+1).padStart(3,"0")}</option>)}</select></label>
-    {error&&<p role="alert">{error}</p>}<div className="scroll-table"><table><thead><tr>{["Pedido","Data","Prevista","Registrada","Conferência"].map(label=><th key={label}>{label}</th>)}</tr></thead><tbody>{result?.map(r=><tr key={r.order}><td><button onClick={()=>open(r.order)}>{r.order}</button></td><td>{r.date.split("-").reverse().join("/")}</td><td>{money(r.expected)}</td><td>{money(r.posted)}</td><td>{r.status==="revisar"?"Revisão necessária":"Conciliado"}</td></tr>)}</tbody></table></div></section>
+  const [scope,filter]=useState("todos");
+  const rows=[...(result??[])].sort((a,b)=>b.date.localeCompare(a.date));
+  const total=(key:"expected"|"posted")=>rows.reduce((sum,r)=>sum+r[key],0);
+  const months=Array.from(new Set(rows.map(r=>r.date.slice(0,7)))).sort().map(m=>({
+    month:m, amount:rows.filter(r=>r.date.startsWith(m)).reduce((sum,r)=>sum+r.posted,0)
+  }));
+  const visible=rows.filter(r=>scope==="todos"||r.status===scope);
+  return <section><div className="workhead"><div><h1>Comissões por criador</h1><p>Veja quanto a oferta prevê e quanto foi lançado para quem divulgou a venda.</p></div>
+    <label>Escolher criador<select value={n} onChange={e=>set(Number(e.target.value))}>{Array.from({length:500},(_,i)=><option key={i} value={i+1}>Criador {String(i+1).padStart(3,"0")}</option>)}</select></label></div>
+    {error&&<p role="alert">{error}</p>}{result?<><div className="casegrid"><article className="casecard"><small>Comissão registrada</small><h2 className="bigvalue">{money(total("posted"))}</h2><p>Somando {rows.length} pedidos. A regra da oferta prevê <b>{money(total("expected"))}</b>.</p></article>
+    <article className="casecard"><h3>Lançamentos por mês</h3>{months.map(m=><div className="monthrow" key={m.month}><span>{new Date(m.month+"-15T12:00:00").toLocaleDateString("pt-BR",{month:"short"})}</span><meter min={0} max={Math.max(1,...months.map(x=>x.amount))} value={m.amount}/><b>{money(m.amount)}</b></div>)}</article></div>
+    <div className="sectionbar"><h2>Extrato de pedidos</h2><select aria-label="Filtrar extrato" value={scope} onChange={e=>filter(e.target.value)}><option value="todos">Todos os pedidos</option><option value="revisar">Em revisão</option><option value="conciliado">Conciliados</option></select></div>
+    <div className="scroll-table"><table><thead><tr>{["Pedido","Data","Prevista","Registrada","Situação"].map(label=><th key={label}>{label}</th>)}</tr></thead><tbody>{visible.map(r=><tr key={r.order}><td><button onClick={()=>open(r.order)}>{r.order} ↗</button></td><td>{r.date.split("-").reverse().join("/")}</td><td>{money(r.expected)}</td><td>{money(r.posted)}</td><td><span className={r.status==="revisar"?"pill amber":"pill"}>{r.status==="revisar"?"Em revisão":"Conciliado"}</span></td></tr>)}</tbody></table>{!visible.length&&<p>Nenhum pedido nesta situação para este criador.</p>}</div></>:!error&&<p role="status">Consultando extrato…</p>}</section>
 }
 
 export function Graph({id}:{id:string}){

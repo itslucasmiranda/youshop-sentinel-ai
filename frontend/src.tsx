@@ -70,6 +70,7 @@ const displayAmounts = (text: string) =>
   text.replace(/(-?\d+) centavos/g, (_, amount: string) => money(Number(amount)));
 const path = (id: string) => "/api/orders/" + encodeURIComponent(id);
 function Order({ id }: { id: string }) {
+  const [view, choose] = useState("Movimentações");
   const [data, setData] = useState<Case>(),
     [answer, setAnswer] = useState<Answer>(),
     [error, setError] = useState(""),
@@ -105,10 +106,15 @@ function Order({ id }: { id: string }) {
       {error && <p role="alert">{error}</p>}
       {data && (
         <>
-          <h2>Resultado da conferência</h2><small>Pedido {id}</small>
-          <p>
-            {data.status === "revisar" ? "Revisão necessária" : "Conciliado"}
-          </p>
+          <article className="verdict"><div><span className={data.status==="revisar"?"pill amber":"pill"}>{data.status==="revisar"?"Revisão necessária":"Conciliado"}</span>
+            <h2>{data.attribution && data.attribution.expected_minor!==data.attribution.posted_minor
+              ? money(Math.abs(data.attribution.posted_minor-data.attribution.expected_minor))+" de diferença na comissão"
+              : data.status==="revisar"?"Este pedido precisa de conferência":"A regra liberou este pedido"}</h2>
+            <p>{data.attribution ? "A oferta prevê "+money(data.attribution.expected_minor)+". O valor registrado para "+data.attribution.attributed_creator+" é "+money(data.attribution.posted_minor)+"."
+                : "Consulte os pagamentos e reembolsos abaixo. Este pedido não possui uma oferta de comissão vinculada."}</p>
+            </div><small>{id}</small></article>
+          <div className="switcher" aria-label="Detalhes do pedido">{["Movimentações","Perguntar sobre o pedido",...(data.status==="revisar"||data.review?["Revisar alerta"]:[])].map(name=><button key={name} aria-pressed={view===name} onClick={()=>choose(name)}>{name}</button>)}</div>
+          {view==="Movimentações" && <section className="workspacepanel">
           <section className="totals">
             {[
               ["Pago", data.paid_minor],
@@ -121,8 +127,8 @@ function Order({ id }: { id: string }) {
               </div>
             ))}
           </section>
-          <h3>Histórico de pagamentos e reembolsos</h3>
-          <ol>
+          <h3>Histórico do pedido</h3>
+          <ol className="eventline">
             {data.events.map((e) => (
               <li key={e.event_id}>
                 <b>
@@ -134,31 +140,14 @@ function Order({ id }: { id: string }) {
               </li>
             ))}
           </ol>
-          {data.attribution && (
-            <section>
-              <h3>Quem recebe a comissão?</h3>
-              <p>
-                {[
-                  data.attribution.product,
-                  data.attribution.offer,
-                  data.attribution.link,
-                  data.attribution.creator,
-                ].join(" → ")}
-              </p>
-              <p>
-                Crédito atribuído a {data.attribution.attributed_creator}.
-                Comissão prevista {money(data.attribution.expected_minor)} ·
-                registrada {money(data.attribution.posted_minor)}.
-              </p>
-            </section>
-          )}
           {!!data.reasons.length && (
             <p>
               Motivos para revisão ·{" "}
               {data.reasons.map((x) => x.replaceAll("_", " ")).join(", ")}
             </p>
           )}
-          {data.review ? (
+          </section>}
+          {view==="Revisar alerta" && (data.review ? (
             <p>
               Revisão registrada por {data.review.reviewer} ·{" "}
               {data.review.decision} · {data.review.note}
@@ -185,9 +174,9 @@ function Order({ id }: { id: string }) {
                 <button disabled={busy}>Registrar revisão</button>
               </form>
             )
-          )}
-          <form onSubmit={(e) => submit(e, "explanation")}>
-            <h3>Consultar evidências</h3>
+          ))}
+          {view==="Perguntar sobre o pedido" && <><form onSubmit={(e) => submit(e, "explanation")}>
+            <h3>Que registro explica este pedido?</h3><p>A resposta usa os eventos desta venda. Você pode perguntar sobre o pagamento, o reembolso ou a comissão.</p>
             <label>
               Pergunta
               <input
@@ -215,6 +204,7 @@ function Order({ id }: { id: string }) {
               ))}
             </section>
           )}
+          </>}
         </>
       )}
     </>

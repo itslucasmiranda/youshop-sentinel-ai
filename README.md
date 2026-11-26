@@ -17,7 +17,7 @@ Acesse [o painel local](http://127.0.0.1:8001/). Mantenha esse terminal aberto d
 
 ## Demonstração em três perguntas
 
-No **Resumo da operação**, clique em **Conferir este pedido** para abrir o exemplo de comissão após reembolso. Se estiver em outro pedido, use **Abrir exemplo de comissão após reembolso**. Em **Consultar evidências**, faça uma pergunta por vez.
+No **Resumo da operação**, clique em **Conferir este pedido** para abrir o exemplo de comissão após reembolso. Se estiver em outro pedido, use **Abrir exemplo de comissão após reembolso**. Em **Perguntar sobre o pedido**, faça uma pergunta por vez. Use **Movimentações** para consultar o histórico e **Revisar alerta** para registrar um parecer.
 
 1. **Por que a comissão ficou em revisão após o reembolso do pedido?** A regra da oferta prevê R$ 0,00 depois do reembolso integral. O registro mostra R$ 10,00. A diferença exige revisão humana.
 2. **Qual evento comprova o reembolso deste pedido?** A evidência é o evento `lab-comissao-apos-reembolso-1`, no valor de R$ 100,00.
