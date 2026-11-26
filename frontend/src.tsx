@@ -34,6 +34,7 @@ type Answer = {
   case_finding?: string;
   message: string;
   draft?: string;
+  model?: string;
   sources: { id: string; section: string; url: string; summary: string }[];
 };
 type Evaluation = {
@@ -46,6 +47,9 @@ type Evaluation = {
 };
 const money = (n: number) =>
   (n / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+const demoOrder = "lab-comissao-apos-reembolso";
+const displayAmounts = (text: string) =>
+  text.replace(/(-?\d+) centavos/g, (_, amount: string) => money(Number(amount)));
 const path = (id: string) => "/api/orders/" + encodeURIComponent(id);
 async function api<T>(url: string, body?: unknown): Promise<T> {
   const res = await fetch(
@@ -190,7 +194,7 @@ function Order({ id }: { id: string }) {
               Pergunta
               <input
                 name="question"
-                defaultValue="Qual evento confirma o pagamento do pedido?"
+                defaultValue={id === demoOrder ? "Por que a comissão ficou em revisão após o reembolso do pedido?" : "Qual evento confirma o pagamento do pedido?"}
                 required
                 maxLength={400}
               />
@@ -199,9 +203,10 @@ function Order({ id }: { id: string }) {
           </form>
           {answer && (
             <section aria-live="polite">
-              <p>{answer.message}</p>
-              {answer.case_finding && <p>{answer.case_finding}</p>}
-              {answer.draft && <p>Rascunho gerado por IA · {answer.draft}</p>}
+              <h4>Resposta para {id}</h4>
+              <p>{displayAmounts(answer.message)}</p>
+              {answer.case_finding && <p>{displayAmounts(answer.case_finding)}</p>}
+              {answer.draft && <p>Seleção de evidências por IA · {answer.model}</p>}
               {answer.sources.map((s) => (
                 <p key={s.id}>
                   {s.summary}{" "}
@@ -319,7 +324,7 @@ function App() {
     ])
       .then(([list, results]) => {
         setIds(list);
-        select(list[0]);
+        select(list.includes(demoOrder) ? demoOrder : list[0]);
         setScores(results);
       })
       .catch((e) => setError(e.message));
@@ -338,6 +343,9 @@ function App() {
             ))}
           </select>
         </label>
+        {ids.includes(demoOrder) && id !== demoOrder && (
+          <button onClick={() => select(demoOrder)}>Abrir exemplo de comissão após reembolso</button>
+        )}
         {id && <Order key={id} id={id} />}
         {scores && (
           <details>
