@@ -1,3 +1,4 @@
+import {areas, Guide, Example} from "./guide";
 import {api, money} from "./client";
 import {Overview, Simulation, Defense, Creator, Graph} from "./lab";
 import React, { useEffect, useState } from "react";
@@ -47,6 +48,22 @@ type Evaluation = {
     simulated_seconds_to_alert: number | null;
   }[];
 };
+const caseNames: Record<string, string> = {
+  "comissao-apos-reembolso": "Comissão após reembolso integral",
+  "atribuicao-divergente": "Venda atribuída a outro criador",
+  "comissao-normal": "Venda com comissão correta",
+  "compra-propria": "Compra pelo próprio criador",
+  "contas-associadas": "Contas associadas",
+  "dois-pagamentos": "Dois pagamentos no mesmo pedido",
+  "ordem-invertida": "Reembolso anterior ao pagamento",
+  "reembolso-excedente": "Reembolso maior que o pagamento",
+  "reembolso-integral": "Reembolso integral",
+  "reembolso-parcial": "Reembolso parcial",
+  "reembolso-sem-venda": "Reembolso sem pagamento registrado",
+  "trafego-atipico": "Volume de cliques atípico",
+  venda: "Venda regular",
+};
+const caseLabel = (id: string) => caseNames[id.replace(/^lab-/, "")] ?? id;
 const demoOrder = "lab-comissao-apos-reembolso";
 const displayAmounts = (text: string) =>
   text.replace(/(-?\d+) centavos/g, (_, amount: string) => money(Number(amount)));
@@ -87,10 +104,9 @@ function Order({ id }: { id: string }) {
       {error && <p role="alert">{error}</p>}
       {data && (
         <>
-          <h2>{id}</h2>
+          <h2>Resultado da conferência</h2><small>Pedido {id}</small>
           <p>
-            {data.status === "revisar" ? "Revisão necessária" : "Conciliado"} ·{" "}
-            {data.rule}
+            {data.status === "revisar" ? "Revisão necessária" : "Conciliado"}
           </p>
           <section className="totals">
             {[
@@ -104,7 +120,7 @@ function Order({ id }: { id: string }) {
               </div>
             ))}
           </section>
-          <h3>Eventos sintéticos</h3>
+          <h3>Histórico de pagamentos e reembolsos</h3>
           <ol>
             {data.events.map((e) => (
               <li key={e.event_id}>
@@ -113,13 +129,13 @@ function Order({ id }: { id: string }) {
                   {money(e.amount_minor)}
                 </b>
                 <br />
-                {e.event_id} · {e.occurred_at_utc} · {e.fixture_version}
+                {new Date(e.occurred_at_utc).toLocaleString("pt-BR")} · Registro {e.event_id}
               </li>
             ))}
           </ol>
           {data.attribution && (
             <section>
-              <h3>Atribuição da oferta fictícia</h3>
+              <h3>Quem recebe a comissão?</h3>
               <p>
                 {[
                   data.attribution.product,
@@ -294,7 +310,7 @@ function RuleExperiment() {
   );
 }
 function App() {
-  const [screen, show] = useState("TrustGraph");
+  const [screen, show] = useState<keyof typeof areas>("Visão geral");
   function explore(order:string){select(order);show("TrustGraph")}
   const [ids, setIds] = useState<string[]>([]),
     [id, select] = useState(""),
@@ -314,25 +330,26 @@ function App() {
   }, []);
   return (
     <>
-      <header>YouShop Sentinel AI</header>
-      <main>
-        <h1>YouShop Sentinel AI</h1><nav aria-label="Áreas do laboratório">{["Visão geral","Simulação","Defesa","TrustGraph","Creator"].map(name=><button key={name} aria-pressed={screen===name} onClick={()=>show(name)}>{name}</button>)}</nav>
-        {screen==="Visão geral" && <Overview/>}{screen==="Simulação" && <Simulation open={explore}/>}
+      <aside className="rail"><div className="brand"><span aria-hidden="true">S</span> Sentinel</div><p>Central de comissões</p>
+        <nav aria-label="Navegação principal">{(Object.keys(areas) as (keyof typeof areas)[]).map(name=><button key={name} aria-current={screen===name?"page":undefined} onClick={()=>show(name)}>{areas[name]}</button>)}</nav>
+      </aside><main><header className="topline"><span>YouShop / Operações</span><span>● Dados de demonstração</span></header>
+        {screen==="Visão geral" && <><h1>Resumo da operação</h1><Example open={()=>explore(demoOrder)}/><Overview/></>}
+        {screen==="Ajuda" && <Guide/>}{screen==="Simulação" && <Simulation open={explore}/>}
         {screen==="Defesa" && <><Defense/><RuleExperiment/></>}{screen==="Creator" && <Creator open={explore}/>}
-        {screen==="TrustGraph" && <><h2>Conciliação de pedidos</h2>
+        {screen==="TrustGraph" && <><h1>Conferir pedido</h1><p>Veja o que foi pago, quanto voltou ao comprador e qual comissão ficou registrada.</p>
         {error && <p role="alert">{error}</p>}
         <label>
           Pedido sintético
           <select value={id} onChange={(e) => select(e.target.value)}>
             {(id && !ids.includes(id) ? [id,...ids] : ids).map((v) => (
-              <option key={v}>{v}</option>
+              <option key={v} value={v}>{caseLabel(v)}</option>
             ))}
           </select>
         </label>
         {ids.includes(demoOrder) && id !== demoOrder && (
           <button onClick={() => select(demoOrder)}>Abrir exemplo de comissão após reembolso</button>
         )}
-        {id && <><Graph key={"graph"+id} id={id}/><Order key={id} id={id}/></>}
+        {id && <><Order key={id} id={id}/><details><summary>Rastrear a origem dos registros</summary><Graph key={"graph"+id} id={id}/></details></>}
         {scores && (
           <details>
             <summary>
@@ -346,7 +363,7 @@ function App() {
             <ul>
               {scores.cases.map((c) => (
                 <li key={c.name}>
-                  {c.name} ·{" "}
+                  {caseLabel(c.name)} ·{" "}
                   {["tp", "tn"].includes(c.result)
                     ? "conforme esperado"
                     : "divergente"}
@@ -361,7 +378,7 @@ function App() {
         )}
         <RuleExperiment /></>}
         <footer>
-          <a href="/docs">Documentação da API</a>
+          <a href="/docs">Referência técnica para desenvolvedores</a>
         </footer>
       </main>
     </>

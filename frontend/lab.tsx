@@ -21,13 +21,21 @@ function useRead<T>(url:string) {
 
 export function Overview(){
   const {result,error}=useRead<Summary>("/api/twin");
-  return <section><h2>Visão geral</h2><p>Conciliação inicial da carteira de pedidos sintéticos.</p>
+  return <section><h2>Carteira simulada</h2><p>Resultados da primeira conferência sobre todos os pedidos fictícios.</p>
     {error && <p role="alert">{error}</p>}
-    {result && <><div className="totals">{Object.entries({Pedidos:result.orders,Creators:result.creators,Produtos:result.products,Dias:result.days}).map(([key,n])=><div key={key}>{key}<strong>{n.toLocaleString("pt-BR")}</strong></div>)}</div>
+    {result && <><div className="totals">{Object.entries({Pedidos:result.orders,Criadores:result.creators,Produtos:result.products,Dias:result.days}).map(([key,n])=><div key={key}>{key}<strong>{n.toLocaleString("pt-BR")}</strong></div>)}</div>
     <CountsView counts={result.counts}/></>}</section>
 }
 function CountsView({counts:c}:{counts:Counts}){
-  return <p>Alertas corretos: {c.tp} · Regulares classificados corretamente: {c.tn} · Alertas indevidos: {c.fp} · Casos sem alerta: {c.fn}</p>
+  const groups = [
+    ["Problemas detectados",c.tp,"A regra pediu revisão corretamente."],
+    ["Pedidos regulares",c.tn,"A regra liberou pedidos corretos."],
+    ["Alertas indevidos",c.fp,"Pedidos regulares enviados para revisão."],
+    ["Problemas sem alerta",c.fn,"Precisavam de revisão e passaram pela regra."]
+  ] as const;
+  const total = c.tp+c.tn+c.fp+c.fn;
+  return <div className="outcomes"><h3>O que a regra encontrou</h3><div className="distribution" aria-hidden="true">{groups.map(([label,n])=><i key={label} style={{width:(total?n/total*100:0)+"%"}}/>)}</div><div className="legend">{groups.map(([label,n,meaning])=><div key={label}><small>{label}</small><b>{n.toLocaleString("pt-BR")}</b><p>{meaning}</p></div>)}</div></div>
+
 }
 
 export function Simulation({open}:{open:(id:string)=>void}){
@@ -36,7 +44,7 @@ export function Simulation({open}:{open:(id:string)=>void}){
     wait(true); fail("");
     try {set(await api<Plan>("/api/twin/plan",{}))} catch(e){fail(String(e))} finally{wait(false)}
   }
-  return <section><h2>Laboratório de simulação</h2><p>Combine cenários contábeis autorizados e compare o alerta da regra com o resultado esperado.</p>
+  return <section><h1>Testar cenários</h1><p>Execute vendas fictícias com situações conhecidas. Se o cenário pede revisão e a regra libera o pedido, você encontrou uma falha no teste.</p>
     <button disabled={busy} onClick={run}>{busy?"Executando…":"Selecionar e executar cenários"}</button>{error && <p role="alert">{error}</p>}
     {plan && <><p>{plan.source}</p><ul>{plan.cases.map(c=><li key={c.order}><strong>{c.description}</strong> · Esperado: {c.expected?"revisão":"conciliado"} · Observado: {c.baseline?"revisão":"conciliado"} <button onClick={()=>open(c.order)}>Ver {c.order}</button></li>)}</ul></>}</section>
 }
@@ -49,7 +57,7 @@ export function Defense(){
     wait(true);fail("");
     try{set(await api<Proposal>("/api/twin/proposals/review",{...fields,revision:result.revision}))}catch(e){fail(String(e))}finally{wait(false)}
   }
-  return <section><h2>Avaliação defensiva</h2><p>O laboratório procura verificações que recuperem casos perdidos em 25 pedidos e reserva outros 25 para o teste após a decisão humana.</p>
+  return <section><h1>Avaliar regras</h1><p>Usamos 25 pedidos para encontrar melhorias. Autorize o teste em outros 25 para ver quantos problemas a nova regra consegue identificar.</p>
     {(error||failure)&&<p role="alert">{error||failure}</p>}
     {result&&<><h3>Verificações sugeridas</h3><ul>{result.checks.map(c=><li key={c}>{c}</li>)}</ul><h3>Antes da revisão</h3><CountsView counts={result.baseline}/>
     {result.decision?<p>Parecer registrado: {result.decision}</p>:<form onSubmit={decide}><label>Revisor <input name="reviewer" required maxLength={80}/></label><label>Justificativa <input name="note" required maxLength={500}/></label>
@@ -60,8 +68,8 @@ export function Defense(){
 export function Creator({open}:{open:(id:string)=>void}){
   const [n,set]=useState(1);
   const {result,error}=useRead<Row[]>("/api/twin/creators/"+n);
-  return <section><h2>Portal do creator</h2><label>Perfil de demonstração <select value={n} onChange={e=>set(Number(e.target.value))}>{Array.from({length:500},(_,i)=><option key={i} value={i+1}>creator-{String(i+1).padStart(3,"0")}</option>)}</select></label>
-    {error&&<p role="alert">{error}</p>}<ul>{result?.map(r=><li key={r.order}><button onClick={()=>open(r.order)}>{r.order}</button> · {r.date} · Prevista {money(r.expected)} · Registrada {money(r.posted)} · {r.status}</li>)}</ul></section>
+  return <section><h1>Comissões por criador</h1><p>Escolha quem divulgou o produto. Compare a comissão calculada pela oferta com o valor lançado em cada venda.</p><label>Perfil de demonstração <select value={n} onChange={e=>set(Number(e.target.value))}>{Array.from({length:500},(_,i)=><option key={i} value={i+1}>creator-{String(i+1).padStart(3,"0")}</option>)}</select></label>
+    {error&&<p role="alert">{error}</p>}<div className="scroll-table"><table><thead><tr>{["Pedido","Data","Prevista","Registrada","Conferência"].map(label=><th key={label}>{label}</th>)}</tr></thead><tbody>{result?.map(r=><tr key={r.order}><td><button onClick={()=>open(r.order)}>{r.order}</button></td><td>{r.date.split("-").reverse().join("/")}</td><td>{money(r.expected)}</td><td>{money(r.posted)}</td><td>{r.status==="revisar"?"Revisão necessária":"Conciliado"}</td></tr>)}</tbody></table></div></section>
 }
 
 export function Graph({id}:{id:string}){
