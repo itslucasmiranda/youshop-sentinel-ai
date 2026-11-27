@@ -29,7 +29,7 @@ LABELS = (
     ("payment_event", "demo-order-1", "Qual evento confirma o pagamento do pedido?",
      ("demo-paid-1",), ("10000 centavos",)),
     ("missing_refund", "lab-venda", "Qual evento confirma o reembolso?",
-     (), ("As evidências locais não respondem",)),
+     ("synthetic-ledger-v1",), ("Nenhum evento de reembolso consta no histórico deste pedido.",)),
 )
 
 

@@ -170,6 +170,22 @@ def test_refund_cites_only_selected_orders_event(local, order_id, event_id):
     assert f"{event['amount_minor']} centavos" in answer["message"]
 
 
+@pytest.mark.parametrize(("order_id", "expected"), [
+    ("sim-03501", "2713 centavos"),
+    ("lab-reembolso-sem-venda", "Nenhum pagamento"),
+    ("lab-venda", "A regra atual não sinalizou divergências"),
+])
+def test_plain_language_order_diagnosis(local, order_id, expected):
+    client, _ = local
+    response = client.post(f"/api/orders/{order_id}/explanation",
+                           json={"question": "o que ha de errado com o pedido?"})
+    assert response.status_code == 200
+    answer = response.json()
+    assert answer["mode"] == "evidencia_local"
+    assert expected in answer["message"]
+    assert answer["citation_ids"]
+
+
 def test_withdrawal_date_abstains_before_generation(local, monkeypatch):
     client, _ = local
     transport = mock_generation(monkeypatch, ["demo-paid-1"])
@@ -179,6 +195,43 @@ def test_withdrawal_date_abstains_before_generation(local, monkeypatch):
     assert answer["citation_ids"] == answer["sources"] == []
     assert "Não há evidência local para determinar a data do próximo saque." == answer["message"]
     transport.assert_not_called()
+
+
+def test_order_without_refund_explains_missing_event(local):
+    client, _ = local
+    answer = client.post("/api/orders/sim-00004/explanation",
+                         json={"question": "Qual evento comprova o reembolso?"}).json()
+    assert answer["mode"] == "evidencia_local"
+    assert "Nenhum evento de reembolso" in answer["message"]
+    assert "sim-00004-0" not in answer["citation_ids"]
+
+
+def test_order_questions_use_selected_order_and_recorded_review(local):
+    client, _ = local
+    simulated = client.post("/api/orders/sim-03501/explanation",
+                            json={"question": "Quem recebeu o crédito pelo link?"}).json()
+    assert "creator-002" in simulated["message"]
+    assert "criador-demo" not in simulated["message"]
+
+    url = "/api/orders/lab-comissao-apos-reembolso"
+    case = client.get(url).json()
+    saved = client.post(url + "/review", json=dict(revision=case["revision"], reviewer="Pessoa revisora",
+                        decision="confirmado", note="Reembolso conferido."))
+    assert saved.status_code == 200
+    answer = client.post(url + "/explanation", json={"question": "Quem confirmou o alerta?"}).json()
+    assert "Pessoa revisora" in answer["message"]
+    assert "Reembolso conferido" in answer["message"]
+
+
+def test_local_model_can_match_an_unrecognized_phrase_to_order_facts(local, monkeypatch):
+    client, _ = local
+    mock_generation(monkeypatch, ["resumo"])
+    response = client.post("/api/orders/sim-03501/explanation",
+                           json={"question": "Me dá um panorama dessa transação?"})
+    answer = response.json()
+    assert answer["generation_status"] == "selected"
+    assert "2713 centavos" in answer["message"]
+    assert "sim-03501-1" in answer["citation_ids"]
 
 
 

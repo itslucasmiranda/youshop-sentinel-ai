@@ -40,14 +40,24 @@ def database():
 
 def case_details(db, order_id):
     events, journey = LAB.get(order_id, (None, None))
+    expiry = None
     if events is None:
-        events, journey = twin.lookup(order_id)
+        events, journey, expiry = twin.lookup(order_id)
     if events is None:
         events = [dict(row) for row in db.execute(
             "SELECT * FROM synthetic_events WHERE order_id = ?", (order_id,))]
     if not events:
         raise HTTPException(404, "Pedido ausente.")
     case = reconcile(events, journey)
+    if expiry is not None:
+        sale = events[0]["occurred_at_utc"][:10]
+        checks = {}
+        if sale > expiry.isoformat():
+            checks["offer"] = (f"A oferta venceu em {expiry:%d/%m/%Y}. "
+                               f"A venda ocorreu em {'/'.join(reversed(sale.split('-')))}.")
+        if not journey.sale_confirmed:
+            checks["confirmation"] = "Existe um evento de pagamento, mas falta a confirmação independente da venda."
+        case["lab_checks"] = checks
     review = db.execute("SELECT * FROM case_reviews WHERE order_id=? AND revision=?",
                         (order_id, case["revision"])).fetchone()
     return dict(**case, order_id=order_id, review=dict(review) if review else None)
@@ -97,9 +107,8 @@ class Question(BaseModel):
 @router.post("/orders/{order_id}/explanation")
 def explanation(order_id: str, body: Question):
     case = order(order_id)
-    evidence = {k: v for k, v in case.items() if k != "review"}
     try:
-        return explain(evidence, body.question)
+        return explain(case, body.question)
     except (ValueError, OSError, TransportError):
         raise HTTPException(503, "O modelo local não conseguiu gerar a explicação.")
 
