@@ -35,16 +35,16 @@ function Trend({rows, start, days}:{rows:Order[];start:number;days:number}){
 }
 
 export function Dashboard({open}:{open:(id:string)=>void}){
-  const [creator,choose]=useState(2),[days,period]=useState(90),[data,save]=useState<Order[]>([]),[error,fail]=useState(""),[filter,select]=useState("todos");
-  useEffect(()=>{let active=true;save([]);fail("");api<Order[]>("/api/twin/creators/"+creator).then(rows=>{if(active)save(rows)}).catch(e=>{if(active)fail(String(e))});return ()=>{active=false}},[creator]);
+  const [creator,choose]=useState(2),[days,period]=useState(90),[data,save]=useState<Order[]>(),[error,fail]=useState(""),[filter,select]=useState("todos");
+  useEffect(()=>{let active=true;save(undefined);fail("");api<Order[]>("/api/twin/creators/"+creator).then(rows=>{if(active)save(rows)}).catch(e=>{if(active)fail(String(e))});return ()=>{active=false}},[creator]);
   const last=Date.UTC(2026,2,31), start=last-(days-1)*86400000;
-  const rows=data.filter(row=>Date.parse(row.date)>=start).sort((a,b)=>b.date.localeCompare(a.date)||a.order.localeCompare(b.order));
+  const rows=(data??[]).filter(row=>Date.parse(row.date)>=start).sort((a,b)=>b.date.localeCompare(a.date)||a.order.localeCompare(b.order));
   const reviewed=rows.filter(row=>row.status==="revisar").length;
   const stats=[["Pedidos no período",String(rows.length),"Vendas vinculadas ao perfil"],["Comissão registrada",money(add(rows,"posted")),"Valor lançado para o criador"],["Comissão prevista",money(add(rows,"expected")),"Pela regra da oferta"],["Em revisão",String(reviewed),"Pedidos que exigem conferência"]];
   const filtered=rows.filter(r=>filter==="todos"||r.status===filter);
-  return <><div className="dashhead"><div><h1>Central de comissões</h1><p>Acompanhe os lançamentos e investigue diferenças por criador.</p></div><label>Perfil simulado<select value={creator} onChange={e=>choose(Number(e.target.value))}>{Array.from({length:500},(_,i)=><option value={i+1} key={i}>Criador {String(i+1).padStart(3,"0")}</option>)}</select></label></div>
+  return <><div className="dashhead"><div><h2>Comissões no período</h2><p>Acompanhe os lançamentos e investigue diferenças por criador.</p></div><label>Perfil simulado<select value={creator} onChange={e=>choose(Number(e.target.value))}>{Array.from({length:500},(_,i)=><option value={i+1} key={i}>Criador {String(i+1).padStart(3,"0")}</option>)}</select></label></div>
     <div className="period"><small>{fmtDate(new Date(start).toISOString())} — 31/03/2026</small><div>{[7,30,90].map(n=><button key={n} aria-pressed={days===n} onClick={()=>period(n)}>{n} dias</button>)}</div></div>
-    {error?<p role="alert">{error}</p>:!data.length?<p role="status">Consultando pedidos…</p>:<>
+    {error?<p role="alert">{error}</p>:!data?<p role="status">Consultando pedidos…</p>:<>
     <div className="kpis">{stats.map(([label,value,hint],i)=><article key={label} style={{borderTopColor:tones[i]}}><small>{label}</small><strong>{value}</strong><span>{hint}</span></article>)}</div>
     <div className="chartgrid"><Trend key={days+"-"+creator} rows={rows} start={start} days={days}/><section className="panel"><h2>Situação dos pedidos</h2><div className="ring" style={{background:rows.length?"conic-gradient(#f4bd79 0 "+reviewed/rows.length*100+"%, #5be2cb 0)":"#30404e"}}><div><strong>{rows.length}</strong><small>pedidos</small></div></div>
     <div className="ringlabel"><span>● Conciliados</span><b>{rows.length-reviewed}</b></div><div className="ringlabel amber"><span>● Em revisão</span><b>{reviewed}</b></div></section></div>

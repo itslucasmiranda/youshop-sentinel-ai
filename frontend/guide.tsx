@@ -31,8 +31,8 @@ export function Guide(){
 }
 
 export function Example({open}:{open:()=>void}){
-  return <article className="example"><div><small>CASO GUIADO · REEMBOLSO INTEGRAL</small><h2>De onde vieram<br/>esses R$ 10,00?</h2>
-    <p>A venda foi reembolsada por inteiro. Acompanhe o pedido e descubra por que a comissão ficou em revisão.</p>
+  return <article className="example"><div><small>Caso guiado · Reembolso integral</small><h2>R$ 10,00 de comissão após o reembolso</h2>
+    <p>A venda de R$ 100,00 foi reembolsada por inteiro. A comissão prevista caiu para R$ 0,00, mas ficaram R$ 10,00 registrados.</p>
     <button onClick={open}>Conferir este pedido →</button></div>
     <dl className="receipt"><dt>Venda</dt><dd>R$ 100,00</dd><dt>Reembolso</dt><dd>− R$ 100,00</dd><dt>Comissão prevista</dt><dd>R$ 0,00</dd><dt>Comissão registrada</dt><dd>R$ 10,00</dd></dl></article>
 }
