@@ -121,8 +121,19 @@ def explain(case, question, *, use_model=None, model=None):
     answer = dict(sources=[], revision=case["revision"], mode="evidencia_insuficiente",
                   event_ids=[event["event_id"] for event in case["events"]],
                   citation_ids=[], message="As evidências locais não respondem à pergunta.")
-    if words & tokens("saque saques retirada retiradas withdrawal"):
-        answer["message"] = "Não há evidência local para determinar a data do próximo saque."
+    if words & tokens("saque saques retirada retiradas withdrawal repasse repasses retenção retida cancelamento cancelado"):
+        if case.get("payout"):
+            record = case["payout"][-1]
+            message = f"{record['label']}. {record['detail']} Valor da comissão nesta etapa: {record['amount_minor']} centavos."
+            if record["label"] == "Comissão retida":
+                message += " Ainda não há data de repasse registrada."
+            answer.update(mode="evidencia_local", citation_ids=[record["id"]],
+                          message=f"{message} [{record['id']}]")
+            return answer
+        if words & tokens("cancelamento cancelado retenção retida"):
+            answer["message"] = "Não há registro local desse evento no ciclo de repasse deste pedido."
+        else:
+            answer["message"] = "Não há evidência local para determinar a data do próximo saque."
         return answer
 
     refund = words & tokens("reembolso reembolsos reembolsado reembolsada estorno estornado devolução")
