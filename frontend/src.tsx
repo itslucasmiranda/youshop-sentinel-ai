@@ -1,7 +1,7 @@
 import {Dashboard} from "./dashboard";
 import {areas, Guide, Example} from "./guide";
 import {api, money} from "./client";
-import {Overview, Simulation, Defense, Creator, Graph} from "./lab";
+import {Overview, Simulation, Defense, Creator, Graph, Related} from "./lab";
 import React, { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 
@@ -75,7 +75,7 @@ const demoOrder = "lab-comissao-apos-reembolso";
 const displayAmounts = (text: string) =>
   text.replace(/(-?\d+) centavos/g, (_, amount: string) => money(Number(amount)));
 const path = (id: string) => "/api/orders/" + encodeURIComponent(id);
-function Order({ id }: { id: string }) {
+function Order({ id, open }: { id: string; open:(id:string)=>void }) {
   const [view, choose] = useState("Movimentações");
   const [question, setQuestion] = useState<string>();
   const [data, setData] = useState<Case>(),
@@ -148,7 +148,8 @@ function Order({ id }: { id: string }) {
           </section>}
           {id === demoOrder && view === "Movimentações" &&
             <button onClick={() => choose("Perguntar sobre o pedido")}>Consultar evidência do reembolso →</button>}
-          <div className="switcher" aria-label="Detalhes do pedido">{["Movimentações","Perguntar sobre o pedido",...(data.status==="revisar"||data.review?["Revisar alerta"]:[])].map(name=><button key={name} aria-pressed={view===name} onClick={()=>choose(name)}>{name}</button>)}</div>
+          <div className="switcher" aria-label="Detalhes do pedido">{["Movimentações","Perguntar sobre o pedido","Pedidos relacionados",...(data.status==="revisar"||data.review?["Revisar alerta"]:[])].map(name=><button key={name} aria-pressed={view===name} onClick={()=>choose(name)}>{name}</button>)}</div>
+          {view==="Pedidos relacionados" && <Related id={id} open={open}/>}
           {view==="Movimentações" && <section className="workspacepanel">
           <p>{hasRefund ? "Saldo após reembolso" : "Saldo registrado"} <strong>{money(data.net_minor)}</strong></p>
           <h3>Histórico do pedido</h3>
@@ -443,7 +444,7 @@ function App() {
         {ids.includes(demoOrder) && id !== demoOrder && (
           <button onClick={() => select(demoOrder)}>Abrir exemplo de comissão após reembolso</button>
         )}
-        {id && <Order key={id} id={id}/>}</>}
+        {id && <Order key={id} id={id} open={explore}/>}</>}
         <footer>
           <a href="/docs">Referência técnica para desenvolvedores</a>
         </footer>
