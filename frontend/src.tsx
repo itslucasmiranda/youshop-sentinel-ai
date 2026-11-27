@@ -22,6 +22,7 @@ type Attribution = {
   posted_minor: number;
 };
 export type Case = {
+  payout?: {id:string; date:string; label:string; detail:string; amount_minor:number}[];
   lab_checks?: {offer?:string; confirmation?:string};
   order_id: string;
   rule: string;
@@ -51,6 +52,10 @@ type Evaluation = {
   }[];
 };
 const caseNames: Record<string, string> = {
+  "repasse-retido": "Repasse · comissão retida",
+  "repasse-agendado": "Repasse · transferência agendada",
+  "repasse-concluido": "Repasse · transferência concluída",
+  "repasse-cancelado": "Repasse · pedido cancelado",
   "comissao-apos-reembolso": "Comissão após reembolso integral",
   "atribuicao-divergente": "Venda atribuída a outro criador",
   "comissao-normal": "Venda com comissão correta",
@@ -109,7 +114,7 @@ function Order({ id }: { id: string }) {
   const suggestions = [
     missed ? "Por que a regra liberou este pedido?" : "O que há de errado com o pedido?",
     eventQuestion,
-    "Qual é o saldo do pedido?",
+    data?.payout ? "Qual é a situação do repasse?" : "Qual é o saldo do pedido?",
   ];
   return (
     <>
@@ -133,6 +138,14 @@ function Order({ id }: { id: string }) {
             <div><dt>Comissão registrada</dt><dd>{data.attribution ? money(data.attribution.posted_minor) : "Sem oferta"}</dd></div>
             <div className="difference"><dt>Diferença</dt><dd>{data.attribution ? money(data.attribution.posted_minor - data.attribution.expected_minor) : "Não se aplica"}</dd></div>
           </dl>
+          {data.payout && <section className="workspacepanel">
+            <h3>Repasse ao criador</h3>
+            <p>Último registro da simulação: <strong>{data.payout[data.payout.length-1].label}</strong></p>
+            <ol className="eventline">{data.payout.map(record=>
+              <li key={record.id}><strong>{record.date.split("-").reverse().join("/")} · {record.label} · {money(record.amount_minor)}</strong>
+                <p>{record.detail}</p><small>Registro {record.id}</small>
+              </li>)}</ol>
+          </section>}
           {id === demoOrder && view === "Movimentações" &&
             <button onClick={() => choose("Perguntar sobre o pedido")}>Consultar evidência do reembolso →</button>}
           <div className="switcher" aria-label="Detalhes do pedido">{["Movimentações","Perguntar sobre o pedido",...(data.status==="revisar"||data.review?["Revisar alerta"]:[])].map(name=><button key={name} aria-pressed={view===name} onClick={()=>choose(name)}>{name}</button>)}</div>
