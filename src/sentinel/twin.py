@@ -43,8 +43,8 @@ def fixture(index, signals=None):
 
 def lookup(order):
     if re.fullmatch(r"sim-[0-9]{5}", order) and int(order[4:]) < SIZE:
-        return fixture(int(order[4:]))[:2]
-    return None, None
+        return fixture(int(order[4:]))
+    return None, None, None
 
 
 def simulate(index, recipe):

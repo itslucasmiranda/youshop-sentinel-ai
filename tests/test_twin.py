@@ -14,6 +14,19 @@ def test_population():
     assert sum(twin.summary()["counts"].values()) == 10000
 
 
+def test_missed_order_explains_both_fixture_checks(tmp_path, monkeypatch):
+    monkeypatch.setenv("SENTINEL_DB", str(tmp_path / "lab.sqlite"))
+    with TestClient(app) as api:
+        path = "/api/orders/sim-00004"
+        order = api.get(path).json()
+        assert order["status"] == "conciliado"
+        assert set(order["lab_checks"]) == {"offer", "confirmation"}
+        message = api.post(path + "/explanation", json={"question": "Por que liberou?"}).json()["message"]
+        assert "04/01/2026" in message and "05/01/2026" in message
+        assert "confirmação independente" in message
+        assert api.get("/api/orders/sim-00000").json()["lab_checks"] == {}
+
+
 def test_plan_and_creator_scope(tmp_path, monkeypatch):
     monkeypatch.setenv("SENTINEL_DB", str(tmp_path / "lab.sqlite"))
     monkeypatch.delenv("SENTINEL_LOCAL_AI", raising=False)
