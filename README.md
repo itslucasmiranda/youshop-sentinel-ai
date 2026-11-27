@@ -98,12 +98,14 @@ $resposta | Select-Object model, generation_status, citation_ids
 | --- | --- |
 | **Resumo da operação** | Abra o caso guiado ou explore os gráficos por criador e período. A carteira reproduz 10.000 pedidos, 500 criadores, 100 produtos e 90 dias fictícios. |
 | **Conferir pedido** | Compare venda, reembolso, comissão prevista e registrada. Em **Rastrear a origem dos registros**, clique em **Pagamento**, **Reembolso** e **Comissão**. No caso guiado, a diferença de R$ 10,00 pede revisão humana. |
-| **Comissões por criador** | Escolha um perfil fictício, consulte seu extrato de 20 pedidos e abra uma venda pelo código. |
+| **Comissões por criador** | Escolha um perfil fictício, filtre o extrato por situação do repasse e abra o pedido para consultar o histórico. Para ver um agendamento, escolha **Criador 177**, filtre **Repasse agendado** e abra **sim-00176**. |
 | **Testar cenários** | Execute uma rodada e compare **Esperado** com **Observado**. A seleção com IA pode variar. No caso `sim-00004`, a comissão de R$ 3,04 confere, mas a oferta venceu antes da venda e falta a confirmação independente. A regra inicial deixou esse caso passar. |
 | **Avaliar regras** | Examine as verificações sugeridas a partir de 25 pedidos. Uma pessoa pode aprovar a repetição em outros 25 reservados. No teste reproduzível, os problemas sem alerta passaram de 10 para 0 e os três pedidos regulares continuaram liberados. |
 | **Guia do Sentinel** | Consulte o significado de comissão prevista, atribuição, alerta indevido e outras expressões usadas na interface. |
 
-**Quem decide o quê?** O código calcula dinheiro em centavos. O Ollama seleciona evidências e pode ajudar a escolher cenários de um catálogo autorizado. A pessoa registra a decisão sobre o alerta e autoriza ou rejeita novos testes. Os pareceres ficam no banco SQLite daquela instalação. Uma pergunta sobre a data de saque exige um calendário de repasses, informação ausente dos registros de demonstração.
+**Quem decide o quê?** O código calcula dinheiro em centavos. O Ollama seleciona evidências e pode ajudar a escolher cenários de um catálogo autorizado. A pessoa registra a decisão sobre o alerta e autoriza ou rejeita novos testes. Os pareceres ficam no banco SQLite daquela instalação.
+
+**Como ler o repasse.** A carteira de 10.000 pedidos tem um calendário fictício com fechamento em **31/03/2026**. Para vendas regulares, o exemplo agenda a transferência três dias após a venda e registra a conclusão sete dias após a venda, se essa data já chegou no calendário simulado. Pendência financeira, confirmação ausente ou oferta vencida deixam a comissão retida. Os pedidos de referência antigos que não têm histórico de repasse continuam sem uma data disponível. Em cada pedido, a resposta se refere somente à comissão daquela venda.
 
 ## Resolver problemas
 
