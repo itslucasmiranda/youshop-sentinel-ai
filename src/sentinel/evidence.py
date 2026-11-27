@@ -121,7 +121,11 @@ def explain(case, question, *, use_model=None, model=None):
     answer = dict(sources=[], revision=case["revision"], mode="evidencia_insuficiente",
                   event_ids=[event["event_id"] for event in case["events"]],
                   citation_ids=[], message="As evidências locais não respondem à pergunta.")
-    if words & tokens("saque saques retirada retiradas withdrawal repasse repasses retenção retida cancelamento cancelado"):
+    refund = words & tokens("reembolso reembolsos reembolsado reembolsada estorno estornado devolução")
+    payment = words & tokens("pagamento pagamentos pago paga")
+    payout_question = words & tokens("saque saques retirada retiradas withdrawal repasse repasses")
+    lifecycle_question = words & tokens("retenção retida cancelamento cancelado")
+    if payout_question or (lifecycle_question and not (refund or payment)):
         if case.get("payout"):
             record = case["payout"][-1]
             message = f"{record['label']}. {record['detail']} Valor da comissão nesta etapa: {record['amount_minor']} centavos."
@@ -136,8 +140,6 @@ def explain(case, question, *, use_model=None, model=None):
             answer["message"] = "Não há evidência local para determinar a data do próximo saque."
         return answer
 
-    refund = words & tokens("reembolso reembolsos reembolsado reembolsada estorno estornado devolução")
-    payment = words & tokens("pagamento pagamentos pago paga")
     commission = words & tokens("comissão comissões")
     review = words & tokens("revisão revisar divergência divergente")
     enabled = os.getenv("SENTINEL_LOCAL_AI") == "1" if use_model is None else use_model

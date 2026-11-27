@@ -25,3 +25,13 @@ def test_payout_visible_and_cited(tmp_path, monkeypatch, name, last, fragment, a
         answer = client.post(url + "/explanation", json={"question": "Qual é a situação do repasse?"}).json()
         assert fragment in answer["message"]
         assert answer["citation_ids"] == [records[-1]["id"]]
+
+
+@pytest.mark.parametrize("order_id", ["lab-comissao-apos-reembolso", "lab-repasse-cancelado"])
+def test_refund_after_cancellation_cites_refund_not_payout(tmp_path, monkeypatch, order_id):
+    monkeypatch.setenv("SENTINEL_DB", str(tmp_path / "refund.sqlite"))
+    with TestClient(app) as client:
+        answer = client.post(f"/api/orders/{order_id}/explanation", json={
+            "question": "Quanto foi reembolsado após o cancelamento?"}).json()
+    assert "10000 centavos" in answer["message"]
+    assert f"{order_id}-1" in answer["citation_ids"]
