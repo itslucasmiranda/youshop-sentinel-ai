@@ -8,7 +8,7 @@ from typing import Annotated, Literal
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field, StringConstraints
 
-from . import twin
+from . import payouts, twin
 from .data import SCHEMA
 from .evidence import explain
 from .experiment import PROPOSAL, experiment
@@ -16,6 +16,7 @@ from .trustgraph import evaluate, reconcile, scenarios
 
 router = APIRouter(prefix="/api")
 LAB = {f"lab-{name}": (events, journey) for name, events, journey, _ in scenarios()}
+LAB.update(payouts.orders())
 REVIEWS = """
 CREATE TABLE IF NOT EXISTS case_reviews (
     order_id TEXT NOT NULL, revision TEXT NOT NULL, decision TEXT NOT NULL,
@@ -49,6 +50,9 @@ def case_details(db, order_id):
     if not events:
         raise HTTPException(404, "Pedido ausente.")
     case = reconcile(events, journey)
+    payout = payouts.timeline(order_id)
+    if payout:
+        case["payout"] = payout
     if expiry is not None:
         sale = events[0]["occurred_at_utc"][:10]
         checks = {}
