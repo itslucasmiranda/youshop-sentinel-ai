@@ -14,6 +14,9 @@ from .evidence import DEFAULT_MODEL, select_citations
 from .trustgraph import reconcile
 
 SIZE = 10000
+PERIOD_START = date(2026, 1, 1)
+PERIOD_DAYS = 90
+PERIOD_END = PERIOD_START + timedelta(days=PERIOD_DAYS - 1)
 SIGNALS = {"receipt": "Falta confirmação independente da venda",
            "expired": "Oferta fora da vigência na data da venda",
            "refund": "Comissão lançada após reembolso integral"}
@@ -26,7 +29,7 @@ def fixture(index, signals=None):
     order = f"sim-{index:05}"
     creator = f"creator-{index % 500 + 1:03}"
     product = f"produto-{(index * 13 + index // 500) % 100 + 1:03}"
-    day = date(2026, 1, 1) + timedelta(days=index % 90)
+    day = PERIOD_START + timedelta(days=index % PERIOD_DAYS)
     paid = 2500 + index * 137 % 35000
     journey = Journey(creator=creator, attributed_creator=creator, buyer=f"cliente-{index:05}",
                       product=product, offer=f"oferta-{product}", link=f"link-{creator}-{product}",
@@ -66,17 +69,49 @@ def score(rows, checks=()):
 @lru_cache(maxsize=1)
 def summary():
     rows = [simulate(i, RECIPES[i % len(RECIPES)]) for i in range(SIZE)]
-    return dict(orders=len(rows), creators=500, products=100, days=90, counts=score(rows))
+    return dict(orders=len(rows), creators=500, products=100, days=PERIOD_DAYS, counts=score(rows))
+
+
+def payout_history(events, journey, expiry, case):
+    """Fictional settlement calendar as of the final day of the simulation."""
+    order = events[0]["order_id"]
+    sale = date.fromisoformat(events[0]["occurred_at_utc"][:10])
+    records = []
+
+    def record(day, label, detail):
+        records.append(dict(date=day.isoformat(), label=label, detail=detail,
+                            id=f"{order}-repasse-{len(records)}", amount_minor=journey.posted_minor))
+
+    reasons = []
+    if case["status"] == "revisar":
+        reasons.append("a conferência financeira sinalizou o pedido")
+    if not journey.sale_confirmed:
+        reasons.append("falta confirmação independente da venda")
+    if sale > expiry:
+        reasons.append("a oferta venceu antes da venda")
+    if reasons:
+        record(sale, "Comissão retida", "O calendário fictício reteve a comissão porque " + " e ".join(reasons) + ".")
+        return records
+
+    release = sale + timedelta(days=3)
+    transfer = sale + timedelta(days=7)
+    record(sale, "Comissão retida", "Início da espera de três dias prevista no calendário fictício.")
+    if release <= PERIOD_END:
+        record(release, "Repasse agendado", f"A comissão foi liberada para repasse em {transfer:%d/%m/%Y}.")
+    if transfer <= PERIOD_END:
+        record(transfer, "Repasse concluído", f"O simulador registra a transferência em {transfer:%d/%m/%Y}.")
+    return records
 
 
 def creator_orders(number):
     rows = []
     for i in range(number - 1, SIZE, 500):
-        events, journey, _ = fixture(i)
+        events, journey, expiry = fixture(i)
         case = reconcile(events, journey)
+        latest = payout_history(events, journey, expiry, case)[-1]
         rows.append(dict(order=events[0]["order_id"], date=events[0]["occurred_at_utc"][:10],
                          expected=case["attribution"]["expected_minor"], posted=journey.posted_minor,
-                         status=case["status"]))
+                         status=case["status"], payout_status=latest["label"], payout_date=latest["date"]))
     return rows
 
 

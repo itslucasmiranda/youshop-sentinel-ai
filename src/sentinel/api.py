@@ -54,6 +54,7 @@ def case_details(db, order_id):
     if payout:
         case["payout"] = payout
     if expiry is not None:
+        case["payout"] = twin.payout_history(events, journey, expiry, case)
         sale = events[0]["occurred_at_utc"][:10]
         checks = {}
         if sale > expiry.isoformat():

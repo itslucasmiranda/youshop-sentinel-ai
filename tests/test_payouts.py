@@ -35,3 +35,22 @@ def test_refund_after_cancellation_cites_refund_not_payout(tmp_path, monkeypatch
             "question": "Quanto foi reembolsado após o cancelamento?"}).json()
     assert "10000 centavos" in answer["message"]
     assert f"{order_id}-1" in answer["citation_ids"]
+
+
+@pytest.mark.parametrize(("index", "status", "date"), [
+    (0, "Repasse concluído", "2026-01-08"),
+    (4, "Comissão retida", "2026-01-05"),
+    (88, "Comissão retida", "2026-03-30"),
+    (176, "Repasse agendado", "2026-03-31"),
+])
+def test_statement_matches_order_at_snapshot(tmp_path, monkeypatch, index, status, date):
+    monkeypatch.setenv("SENTINEL_DB", str(tmp_path / "statement.sqlite"))
+    order_id = f"sim-{index:05}"
+    with TestClient(app) as client:
+        rows = client.get(f"/api/twin/creators/{index % 500 + 1}").json()
+        row = next(row for row in rows if row["order"] == order_id)
+        order = client.get("/api/orders/" + order_id).json()
+    record = order["payout"][-1]
+    assert record["label"] == row["payout_status"] == status
+    assert record["date"] == row["payout_date"] == date
+    assert record["amount_minor"] == row["posted"]

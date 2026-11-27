@@ -6,7 +6,7 @@ type Counts = {tp:number; tn:number; fp:number; fn:number};
 type Summary = {orders:number; creators:number; products:number; days:number; counts:Counts};
 type Plan = {source:string; cases:{order:string; description:string; expected:boolean; baseline:boolean}[]};
 type Proposal = {revision:string; checks:string[]; baseline:Counts; replay:Counts|null; decision:string|null};
-type Row = {order:string; date:string; posted:number; expected:number; status:string};
+type Row = {order:string; date:string; posted:number; expected:number; status:string; payout_status:string; payout_date:string};
 
 function useRead<T>(url:string) {
   const [result,set] = useState<T>(), [error,fail] = useState("");
@@ -92,12 +92,13 @@ export function Creator({open}:{open:(id:string)=>void}){
   const [n,set]=useState(1);
   const {result,error}=useRead<Row[]>("/api/twin/creators/"+n);
   const [scope,filter]=useState("todos");
+  const [payout,filterPayout]=useState("");
   const rows=[...(result??[])].sort((a,b)=>b.date.localeCompare(a.date));
   const total=(key:"expected"|"posted")=>rows.reduce((sum,r)=>sum+r[key],0);
   const months=Array.from(new Set(rows.map(r=>r.date.slice(0,7)))).sort().map(m=>({
     month:m, amount:rows.filter(r=>r.date.startsWith(m)).reduce((sum,r)=>sum+r.posted,0)
   }));
-  const visible=rows.filter(r=>scope==="todos"||r.status===scope);
+  const visible=rows.filter(r=>(scope==="todos"||r.status===scope)&&(!payout||r.payout_status===payout));
   const flagged=rows.filter(r=>r.status==="revisar").length;
   return <section><div className="workhead"><div><h1>Comissões por criador</h1><p>Veja quanto a oferta prevê e quanto foi lançado para quem divulgou a venda.</p></div>
     <label>Escolher criador<select value={n} onChange={e=>set(Number(e.target.value))}>{Array.from({length:500},(_,i)=><option key={i} value={i+1}>Criador {String(i+1).padStart(3,"0")}</option>)}</select></label></div>
@@ -105,8 +106,12 @@ export function Creator({open}:{open:(id:string)=>void}){
     <article className="casecard"><h3>Lançamentos por mês</h3>{months.map(m=><div className="monthrow" key={m.month}><span>{new Date(m.month+"-15T12:00:00").toLocaleDateString("pt-BR",{month:"short"})}</span><meter min={0} max={Math.max(1,...months.map(x=>x.amount))} value={m.amount}/><b>{money(m.amount)}</b></div>)}</article></div>
     <div className="sectionbar"><h2>Extrato de pedidos</h2><select aria-label="Filtrar extrato" value={scope} onChange={e=>filter(e.target.value)}><option value="todos">Todos os pedidos</option><option value="revisar">Em revisão</option><option value="conciliado">Conciliados</option></select></div>
     {flagged>0 && scope!=="revisar" && <p><button onClick={()=>filter("revisar")}>Ver pedidos sinalizados ({flagged}) →</button></p>}
-    <p className="subtle">Abra um pedido pelo código para conferir os valores e os registros da venda.</p>
-    <div className="scroll-table"><table><thead><tr>{["Pedido","Data","Prevista","Registrada","Situação"].map(label=><th key={label}>{label}</th>)}</tr></thead><tbody>{visible.map(r=><tr key={r.order}><td><button onClick={()=>open(r.order)}>{r.order} ↗</button></td><td>{r.date.split("-").reverse().join("/")}</td><td>{money(r.expected)}</td><td>{money(r.posted)}</td><td><span className={r.status==="revisar"?"pill amber":"pill"}>{r.status==="revisar"?"Em revisão":"Conciliado"}</span></td></tr>)}</tbody></table>{!visible.length&&<p>Nenhum pedido nesta situação para este criador.</p>}</div></>:!error&&<p role="status">Consultando extrato…</p>}</section>
+    <label>Repasse em 31/03/2026<select value={payout} onChange={e=>filterPayout(e.target.value)}>
+      <option value="">Todos os repasses</option>
+      {["Comissão retida","Repasse agendado","Repasse concluído"].map(label=><option key={label}>{label}</option>)}
+    </select></label>
+    <p className="subtle">Abra um pedido para conferir os eventos que explicam o repasse.</p>
+    <div className="scroll-table"><table><thead><tr>{["Pedido","Venda","Prevista","Registrada","Conferência","Repasse","Último registro"].map(label=><th key={label}>{label}</th>)}</tr></thead><tbody>{visible.map(r=><tr key={r.order}><td><button onClick={()=>open(r.order)}>{r.order} ↗</button></td><td>{r.date.split("-").reverse().join("/")}</td><td>{money(r.expected)}</td><td>{money(r.posted)}</td><td><span className={r.status==="revisar"?"pill amber":"pill"}>{r.status==="revisar"?"Em revisão":"Conciliado"}</span></td><td>{r.payout_status}</td><td>{r.payout_date.split("-").reverse().join("/")}</td></tr>)}</tbody></table>{!visible.length&&<p>Nenhum pedido nesta situação para este criador.</p>}</div></>:!error&&<p role="status">Consultando extrato…</p>}</section>
 }
 
 export function Graph({result}:{result:Case}){
