@@ -19,6 +19,45 @@ function useRead<T>(url:string) {
   return {result,set,error};
 }
 
+const relationFields = {creator:"Mesmo criador", offer:"Mesma oferta", link:"Mesmo link"} as const;
+type RelatedOrders = {value:string|null; orders:{order:string; date:string}[]};
+type RelationField = keyof typeof relationFields;
+
+export function Related({id,open}:{id:string; open:(id:string)=>void}) {
+  const [field,select] = useState<RelationField>("creator");
+  return <section className="workspacepanel">
+    <h3>O que liga este pedido a outras vendas?</h3>
+    <label>Comparar por
+      <select value={field} onChange={e=>select(e.target.value as RelationField)}>
+        {Object.entries(relationFields).map(([key,label])=><option key={key} value={key}>{label}</option>)}
+      </select>
+    </label>
+    <RelationResults key={field} id={id} field={field} open={open}/>
+  </section>;
+}
+
+function RelationResults({id,field,open}:{id:string; field:RelationField; open:(id:string)=>void}) {
+  const [limit,setLimit] = useState(5);
+  const {result,error} = useRead<RelatedOrders>("/api/orders/"+encodeURIComponent(id)+"/related?field="+field);
+  return <>
+    {error && <p role="alert">{error}</p>}
+    {!result && !error && <p role="status">Procurando pedidos relacionados…</p>}
+    {result && <div aria-live="polite">
+      {result.value ? <>
+        <p>{relationFields[field]} · <strong>{result.value}</strong></p>
+        {result.orders.length ? <>
+          <p>Outros pedidos com esse identificador na mesma base de demonstração: <strong>{result.orders.length}</strong>.</p>
+          <ul className="validation-list">{result.orders.slice(0,limit).map(row=><li key={row.order}>
+            <button type="button" onClick={()=>open(row.order)}>{row.order} ↗</button>
+            <span>{row.date.split("-").reverse().join("/")}</span>
+          </li>)}</ul>
+          {limit<result.orders.length && <button type="button" onClick={()=>setLimit(limit+10)}>Mostrar mais pedidos</button>}
+        </> : <p>Nenhum outro pedido desta base possui esse identificador.</p>}
+      </> : <p>Falta um registro de atribuição para comparar este pedido.</p>}
+    </div>}
+  </>;
+}
+
 export function Overview({evaluate}:{evaluate:()=>void}){
   const {result,error}=useRead<Summary>("/api/twin");
   return <section><h2>Carteira simulada</h2>

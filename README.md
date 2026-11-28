@@ -107,6 +107,8 @@ $resposta | Select-Object model, generation_status, citation_ids
 
 **Como ler o repasse.** A carteira de 10.000 pedidos tem um calendário fictício com fechamento em **31/03/2026**. Para vendas regulares, o exemplo agenda a transferência três dias após a venda e registra a conclusão sete dias após a venda, se essa data já chegou no calendário simulado. Pendência financeira, confirmação ausente ou oferta vencida deixam a comissão retida. Os pedidos de referência antigos que não têm histórico de repasse continuam sem uma data disponível. Em cada pedido, a resposta se refere somente à comissão daquela venda.
 
+**Investigar vendas relacionadas.** Abra **sim-00176** pelo extrato do **Criador 177**. Em **Pedidos relacionados**, escolha **Mesmo criador** para encontrar as outras 19 vendas vinculadas a `creator-177`. Troque para **Mesma oferta** para comparar vendas de outros criadores que divulgaram aquela oferta. Em **Mesmo link**, este exemplo fica vazio porque nenhuma outra venda usou aquele link. Clique em um pedido da lista para investigar seus próprios registros e use **Voltar** para retornar ao pedido inicial. Cada comparação usa o identificador exato dentro da carteira simulada ou do conjunto de casos de referência. O vínculo, por si só, não gera alerta.
+
 ## Resolver problemas
 
 <details>

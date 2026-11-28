@@ -8,7 +8,7 @@ from typing import Annotated, Literal
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field, StringConstraints
 
-from . import payouts, twin
+from . import payouts, relations, twin
 from .data import SCHEMA
 from .evidence import explain
 from .experiment import PROPOSAL, experiment
@@ -17,6 +17,7 @@ from .trustgraph import evaluate, reconcile, scenarios
 router = APIRouter(prefix="/api")
 LAB = {f"lab-{name}": (events, journey) for name, events, journey, _ in scenarios()}
 LAB.update(payouts.orders())
+LAB_RELATIONS = relations.build_index(LAB.values())
 REVIEWS = """
 CREATE TABLE IF NOT EXISTS case_reviews (
     order_id TEXT NOT NULL, revision TEXT NOT NULL, decision TEXT NOT NULL,
@@ -79,6 +80,18 @@ def orders():
 def order(order_id: str):
     with closing(database()) as db:
         return case_details(db, order_id)
+
+
+@router.get("/orders/{order_id}/related")
+def related_orders(order_id: str, field: Literal["creator", "offer", "link"] = "creator"):
+    case = order(order_id)
+    if order_id in LAB:
+        index = LAB_RELATIONS
+    elif case["attribution"]:
+        index = relations.twin_index()
+    else:
+        index = {}
+    return relations.matches(index, case, field)
 
 
 class Review(BaseModel):
